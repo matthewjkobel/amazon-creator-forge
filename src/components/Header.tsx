@@ -1,8 +1,13 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
-import { Users, Search, Heart, Menu } from "lucide-react";
+import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { Users, Search, Heart, Menu, LogOut, User } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
+  const { user, signOut } = useAuth();
+
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
@@ -37,15 +42,52 @@ const Header = () => {
 
           {/* Actions */}
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
-              For Creators
-            </Button>
-            <Button variant="outline" size="sm">
-              Sign In
-            </Button>
-            <Button variant="hero" size="sm">
-              Join as Brand
-            </Button>
+            {user ? (
+              <>
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  For Creators
+                </Button>
+                
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="ghost" size="sm" className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarImage src={user.user_metadata?.avatar_url} />
+                        <AvatarFallback>
+                          {user.email?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span className="hidden sm:inline">
+                        {user.user_metadata?.full_name || user.email}
+                      </span>
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end">
+                    <DropdownMenuItem>
+                      <User className="mr-2 h-4 w-4" />
+                      Profile
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem onClick={signOut}>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              </>
+            ) : (
+              <>
+                <Button variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  For Creators
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <Link to="/auth">Sign In</Link>
+                </Button>
+                <Button variant="hero" size="sm" asChild>
+                  <Link to="/auth">Join as Brand</Link>
+                </Button>
+              </>
+            )}
             
             {/* Mobile menu button */}
             <Button variant="ghost" size="icon" className="md:hidden">
