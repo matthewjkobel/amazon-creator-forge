@@ -13,9 +13,12 @@ import {
   Play,
   Award
 } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 
 const Home = () => {
+  const navigate = useNavigate();
+
   const trustBadges = [
     { name: "500+ Creators", icon: Users },
     { name: "98% Success Rate", icon: TrendingUp },
@@ -67,11 +70,21 @@ const Home = () => {
             </p>
 
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-              <Button size="lg" variant="hero" className="text-lg px-8 py-6">
+              <Button 
+                size="lg" 
+                variant="hero" 
+                className="text-lg px-8 py-6"
+                onClick={() => navigate('/auth')}
+              >
                 Join as Brand
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg px-8 py-6"
+                onClick={() => window.open('https://www.youtube.com/watch?v=dQw4w9WgXcQ', '_blank')}
+              >
                 <Play className="mr-2 h-5 w-5" />
                 Watch Demo
               </Button>
@@ -128,7 +141,11 @@ const Home = () => {
                   ))}
                 </ul>
 
-                <Button className="w-full" variant="hero">
+                <Button 
+                  className="w-full" 
+                  variant="hero"
+                  onClick={() => navigate('/directory')}
+                >
                   Start Finding Creators
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -157,7 +174,11 @@ const Home = () => {
                   ))}
                 </ul>
 
-                <Button className="w-full" variant="coral">
+                <Button 
+                  className="w-full" 
+                  variant="coral"
+                  onClick={() => navigate('/auth')}
+                >
                   Apply as Creator
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
@@ -227,11 +248,21 @@ const Home = () => {
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" variant="hero" className="text-lg px-8 py-6">
+              <Button 
+                size="lg" 
+                variant="hero" 
+                className="text-lg px-8 py-6"
+                onClick={() => navigate('/directory')}
+              >
                 Browse Creator Directory
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
-              <Button size="lg" variant="outline" className="text-lg px-8 py-6">
+              <Button 
+                size="lg" 
+                variant="outline" 
+                className="text-lg px-8 py-6"
+                onClick={() => navigate('/how-it-works')}
+              >
                 Learn More
               </Button>
             </div>

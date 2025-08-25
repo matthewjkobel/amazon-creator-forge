@@ -106,7 +106,11 @@ const Directory = () => {
                     <p className="text-sm font-medium">Unlock Full Access</p>
                     <p className="text-xs text-muted-foreground">Join to contact creators</p>
                   </div>
-                  <Button size="sm" variant="premium">
+                   <Button 
+                    size="sm" 
+                    variant="premium"
+                    onClick={() => window.open('/auth', '_self')}
+                  >
                     Upgrade
                   </Button>
                 </div>
@@ -201,7 +205,10 @@ const Directory = () => {
                     You're viewing a limited preview. Join as a brand member to unlock full creator contact details, 
                     advanced filters, and collaboration tools.
                   </p>
-                  <Button variant="hero">
+                  <Button 
+                    variant="hero"
+                    onClick={() => window.open('/auth', '_self')}
+                  >
                     Join as Brand Member - $299/year
                   </Button>
                 </CardContent>
@@ -224,7 +231,11 @@ const Directory = () => {
 
             {/* Load More */}
             <div className="text-center mt-12">
-              <Button variant="outline" size="lg">
+              <Button 
+                variant="outline" 
+                size="lg"
+                onClick={() => console.log('Loading more creators...')}
+              >
                 Load More Creators
               </Button>
             </div>
