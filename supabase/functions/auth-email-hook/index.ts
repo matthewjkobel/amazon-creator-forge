@@ -19,22 +19,28 @@ serve(async (req) => {
   }
 
   try {
-    const hookSecret = (Deno.env.get("SEND_EMAIL_HOOK_SECRET") ?? "").trim();
+    const hookSecret = (
+      Deno.env.get("SEND_EMAIL_HOOK_SECRET") ??
+      Deno.env.get("WEBHOOK_SECRET") ??
+      Deno.env.get("STANDARDWEBHOOKS_SECRET") ??
+      Deno.env.get("STANDARD_WEBHOOKS_SECRET") ??
+      ""
+    ).trim();
     const resendKey = (Deno.env.get("RESEND_API_KEY") ?? "").trim();
     const supabaseUrl = (Deno.env.get("SUPABASE_URL") ?? "").trim();
 
-    // Diagnostics (no secret values)
-    console.log("auth-email-hook: env presence", {
+    // Enhanced diagnostics
+    console.log("auth-email-hook: environment check", {
       hasHookSecret: Boolean(hookSecret),
       hasResendKey: Boolean(resendKey),
       hasSupabaseUrl: Boolean(supabaseUrl),
-      hasAltWebhookSecret: Boolean((Deno.env.get("WEBHOOK_SECRET") ?? Deno.env.get("STANDARDWEBHOOKS_SECRET") ?? Deno.env.get("STANDARD_WEBHOOKS_SECRET") ?? "").trim()),
+      envKeys: Object.keys(Deno.env.toObject()).filter(k => k.includes('SECRET') || k.includes('WEBHOOK')),
     });
 
     if (!hookSecret) {
-      console.error("Missing SEND_EMAIL_HOOK_SECRET");
+      console.error("Missing webhook secret - checked SEND_EMAIL_HOOK_SECRET, WEBHOOK_SECRET, STANDARDWEBHOOKS_SECRET, STANDARD_WEBHOOKS_SECRET");
       return new Response(
-        JSON.stringify({ error: "SEND_EMAIL_HOOK_SECRET is not configured" }),
+        JSON.stringify({ error: "Webhook secret is not configured" }),
         { status: 500, headers: { "Content-Type": "application/json", ...corsHeaders } },
       );
     }
