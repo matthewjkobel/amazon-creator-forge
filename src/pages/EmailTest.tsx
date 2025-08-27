@@ -4,6 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/components/ui/use-toast";
 
 const EmailTest = () => {
+  console.log("EmailTest component loaded");
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [status, setStatus] = useState<"idle" | "sending" | "success" | "error">("idle");
