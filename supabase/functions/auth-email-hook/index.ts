@@ -48,6 +48,11 @@ serve(async (req) => {
 
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
+    const signatureHeaderCandidate = headers["webhook-signature"] || headers["Webhook-Signature"] || headers["WEBHOOK-SIGNATURE"];
+    console.log("auth-email-hook: headers presence", {
+      hasSignature: Boolean(signatureHeaderCandidate),
+      contentType: headers["content-type"],
+    });
 
     let userEmail: string;
     let token: string;
@@ -105,6 +110,7 @@ serve(async (req) => {
 
     const resend = new Resend(resendKey);
 
+    console.log("auth-email-hook: attempting to send email via Resend", { hasUserEmail: Boolean(userEmail) });
     const { error } = await resend.emails.send({
       from: "Lovable <onboarding@resend.dev>",
       to: [userEmail],
