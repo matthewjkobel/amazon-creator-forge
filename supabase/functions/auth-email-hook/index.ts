@@ -23,6 +23,14 @@ serve(async (req) => {
     const resendKey = (Deno.env.get("RESEND_API_KEY") ?? "").trim();
     const supabaseUrl = (Deno.env.get("SUPABASE_URL") ?? "").trim();
 
+    // Diagnostics (no secret values)
+    console.log("auth-email-hook: env presence", {
+      hasHookSecret: Boolean(hookSecret),
+      hasResendKey: Boolean(resendKey),
+      hasSupabaseUrl: Boolean(supabaseUrl),
+      hasAltWebhookSecret: Boolean((Deno.env.get("WEBHOOK_SECRET") ?? Deno.env.get("STANDARDWEBHOOKS_SECRET") ?? Deno.env.get("STANDARD_WEBHOOKS_SECRET") ?? "").trim()),
+    });
+
     if (!hookSecret) {
       console.error("Missing SEND_EMAIL_HOOK_SECRET");
       return new Response(
