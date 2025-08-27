@@ -25,14 +25,7 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        // Check if user has a creator profile, if not redirect to profile creation
-        const { data: creator } = await supabase
-          .from("creators")
-          .select("id")
-          .eq("user_id", session.user.id)
-          .single();
-        
-        navigate(creator ? "/" : "/creator-profile");
+        navigate("/creator-profile");
       }
     };
     checkUser();
@@ -56,16 +49,10 @@ const Auth = () => {
           title: "Welcome back!",
           description: "You've been signed in successfully.",
         });
-        // Get current session to check for creator profile
+        // Get current session to redirect to creator profile
         const { data: { session } } = await supabase.auth.getSession();
         if (session) {
-          const { data: creator } = await supabase
-            .from("creators")
-            .select("id")
-            .eq("user_id", session.user.id)
-            .single();
-          
-          navigate(creator ? "/" : "/creator-profile");
+          navigate("/creator-profile");
         } else {
           navigate("/");
         }
