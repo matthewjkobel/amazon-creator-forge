@@ -19,9 +19,9 @@ serve(async (req) => {
   }
 
   try {
-    const hookSecret = Deno.env.get("SEND_EMAIL_HOOK_SECRET");
-    const resendKey = Deno.env.get("RESEND_API_KEY");
-    const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+    const hookSecret = (Deno.env.get("SEND_EMAIL_HOOK_SECRET") ?? "").trim();
+    const resendKey = (Deno.env.get("RESEND_API_KEY") ?? "").trim();
+    const supabaseUrl = (Deno.env.get("SUPABASE_URL") ?? "").trim();
 
     if (!hookSecret) {
       console.error("Missing SEND_EMAIL_HOOK_SECRET");
