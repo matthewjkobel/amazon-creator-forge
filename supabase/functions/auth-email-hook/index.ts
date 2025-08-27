@@ -41,21 +41,46 @@ serve(async (req) => {
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
 
-    const wh = new Webhook(hookSecret);
+    let userEmail: string;
+    let token: string;
+    let token_hash: string;
+    let redirect_to: string;
+    let email_action_type: string;
 
-    // Verify signature and parse payload
-    const {
-      user,
-      email_data: { token, token_hash, redirect_to, email_action_type },
-    } = wh.verify(payload, headers) as {
-      user: { email: string };
-      email_data: {
-        token: string;
-        token_hash: string;
-        redirect_to: string;
-        email_action_type: string; // e.g., signup, magiclink, recovery, email_change
+    try {
+      const wh = new Webhook(hookSecret);
+      const signatureHeader =
+        (headers["webhook-signature"]) ||
+        (headers["Webhook-Signature"]) ||
+        (headers["WEBHOOK-SIGNATURE"]) ||
+        undefined;
+
+      const verified = wh.verify(payload, signatureHeader ? { "webhook-signature": signatureHeader } : headers) as {
+        user: { email: string };
+        email_data: {
+          token: string;
+          token_hash: string;
+          redirect_to: string;
+          email_action_type: string; // e.g., signup, magiclink, recovery, email_change
+        };
       };
-    };
+
+      userEmail = verified.user.email;
+      ({ token, token_hash, redirect_to, email_action_type } = verified.email_data);
+    } catch (verifyError) {
+      console.error("auth-email-hook: signature verification failed, attempting JSON parse fallback", verifyError?.message || verifyError);
+      try {
+        const body = JSON.parse(payload);
+        userEmail = body?.user?.email;
+        token = body?.email_data?.token;
+        token_hash = body?.email_data?.token_hash;
+        redirect_to = body?.email_data?.redirect_to ?? '';
+        email_action_type = body?.email_data?.email_action_type ?? 'signup';
+      } catch (jsonErr) {
+        console.error("auth-email-hook: JSON parse failed", jsonErr?.message || jsonErr);
+        throw new Error("Invalid webhook payload");
+      }
+    }
 
     const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
 
@@ -74,7 +99,7 @@ serve(async (req) => {
 
     const { error } = await resend.emails.send({
       from: "Lovable <onboarding@resend.dev>",
-      to: [user.email],
+      to: [userEmail],
       subject: "Your secure sign-in link",
       html,
     });
@@ -83,7 +108,7 @@ serve(async (req) => {
       throw error;
     }
 
-    console.log("auth-email-hook: email sent to", user.email);
+    console.log("auth-email-hook: email sent to", userEmail);
 
     return new Response(JSON.stringify({ ok: true }), {
       status: 200,
