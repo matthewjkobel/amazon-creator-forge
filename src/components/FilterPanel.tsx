@@ -117,26 +117,6 @@ const FilterPanel = ({ isOpen = true, onClose, className }: FilterPanelProps) =>
 
         <Separator />
 
-        {/* Engagement Rate */}
-        <div className="space-y-3">
-          <Label className="text-sm font-medium">Engagement Rate (%)</Label>
-          <div className="px-2">
-            <Slider 
-              defaultValue={[2]} 
-              max={15} 
-              min={0.5} 
-              step={0.1}
-              className="w-full"
-            />
-          </div>
-          <div className="flex justify-between text-xs text-muted-foreground">
-            <span>0.5%</span>
-            <span>15%+</span>
-          </div>
-        </div>
-
-        <Separator />
-
         {/* Price Range */}
         <div className="space-y-3">
           <Label className="text-sm font-medium">Price Range</Label>
