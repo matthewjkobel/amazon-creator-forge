@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users, Mail, Lock, AlertCircle, Chrome } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { getRedirectPath } from "@/utils/authRedirect";
 
 const Auth = () => {
   const [email, setEmail] = useState("");
@@ -24,8 +25,9 @@ const Auth = () => {
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate("/creator-profile");
+      if (session?.user) {
+        const redirectPath = await getRedirectPath(session.user.id);
+        navigate(redirectPath);
       }
     };
     checkUser();
@@ -49,10 +51,11 @@ const Auth = () => {
           title: "Welcome back!",
           description: "You've been signed in successfully.",
         });
-        // Get current session to redirect to creator profile
+        // Get current session and redirect to appropriate dashboard
         const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          navigate("/creator-profile");
+        if (session?.user) {
+          const redirectPath = await getRedirectPath(session.user.id);
+          navigate(redirectPath);
         } else {
           navigate("/");
         }

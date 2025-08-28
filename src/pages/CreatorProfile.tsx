@@ -204,7 +204,7 @@ const CreatorProfile = () => {
         description: isExistingCreator ? "Your creator profile has been updated." : "Welcome to PartnerConnections! Your creator profile is now live.",
       });
 
-      navigate("/directory");
+      navigate("/creator-dashboard");
     } catch (error) {
       console.error("Error saving profile:", error);
       toast({
@@ -471,7 +471,7 @@ const CreatorProfile = () => {
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => navigate("/directory")}
+                onClick={() => navigate("/creator-dashboard")}
                 className="flex-1"
               >
                 Cancel
