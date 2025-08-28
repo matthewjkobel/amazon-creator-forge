@@ -23,9 +23,9 @@ const socialPlatforms = [
   { name: "YouTube", value: "youtube", icon: Youtube, placeholder: "https://youtube.com/@yourhandle" },
   { name: "Instagram", value: "instagram", icon: Instagram, placeholder: "https://instagram.com/yourhandle" },
   { name: "TikTok", value: "tiktok", icon: Video, placeholder: "https://tiktok.com/@yourhandle" },
+  { name: "Facebook", value: "facebook", icon: ExternalLink, placeholder: "https://facebook.com/yourpage" },
   { name: "Pinterest", value: "pinterest", icon: ExternalLink, placeholder: "https://pinterest.com/yourhandle" },
-  { name: "Blog", value: "blog", icon: FileText, placeholder: "https://yourblog.com" },
-  { name: "Other", value: "other", icon: Globe, placeholder: "https://yourwebsite.com" }
+  { name: "X (Twitter)", value: "x", icon: ExternalLink, placeholder: "https://x.com/yourhandle" }
 ];
 
 const niches = [
@@ -35,7 +35,7 @@ const niches = [
 const profileSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
   location: z.string().optional(),
-  bio: z.string().min(10, "About me must be at least 10 characters"),
+  bio: z.string().min(10, "About me must be at least 10 characters").max(1000, "About me must be 1000 characters or less"),
   storefrontUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   featuredVideoUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   priceMin: z.string().optional(),
@@ -291,11 +291,15 @@ const CreatorProfile = () => {
                       <FormLabel>About Me *</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Tell brands about yourself, your content style, and what makes you unique..."
+                          placeholder="Tell brands about yourself, your content style, and what makes you unique... (up to 1000 characters)"
                           className="min-h-[120px]"
+                          maxLength={1000}
                           {...field} 
                         />
                       </FormControl>
+                      <div className="text-sm text-muted-foreground text-right">
+                        {field.value?.length || 0}/1000 characters
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -332,10 +336,10 @@ const CreatorProfile = () => {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Video className="h-4 w-4" />
-                        Featured Content Example
+                        Featured Content Examples
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Link to your best content example" {...field} />
+                        <Input placeholder="Link to your best content examples" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
