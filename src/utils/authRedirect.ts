@@ -2,12 +2,23 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const getRedirectPath = async (userId: string): Promise<string> => {
   try {
+    // Check if user is admin
+    const { data: userData, error: userError } = await supabase
+      .from("users")
+      .select("role")
+      .eq("id", userId)
+      .single();
+
+    if (!userError && userData?.role === 'admin') {
+      return "/admin-dashboard";
+    }
+
     // Check if user has a creator profile
     const { data: creator, error: creatorError } = await supabase
       .from("creators")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (creator && !creatorError) {
       return "/creator-dashboard";
@@ -18,7 +29,7 @@ export const getRedirectPath = async (userId: string): Promise<string> => {
       .from("brands")
       .select("id")
       .eq("user_id", userId)
-      .single();
+      .maybeSingle();
 
     if (brand && !brandError) {
       return "/brand-dashboard";
