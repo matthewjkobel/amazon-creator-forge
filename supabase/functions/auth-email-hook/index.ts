@@ -54,7 +54,11 @@ serve(async (req) => {
 
     const payload = await req.text();
     const headers = Object.fromEntries(req.headers);
-    const signatureHeaderCandidate = headers["webhook-signature"] || headers["Webhook-Signature"] || headers["WEBHOOK-SIGNATURE"];
+    const signatureHeaderCandidate =
+      headers["webhook-signature"] ||
+      headers["Webhook-Signature"] ||
+      headers["WEBHOOK-SIGNATURE"] ||
+      headers["x-supabase-signature"];
     console.log("auth-email-hook: headers presence", {
       hasSignature: Boolean(signatureHeaderCandidate),
       contentType: headers["content-type"],
@@ -69,9 +73,10 @@ serve(async (req) => {
     try {
       const wh = new Webhook(hookSecret);
       const signatureHeader =
-        (headers["webhook-signature"]) ||
-        (headers["Webhook-Signature"]) ||
-        (headers["WEBHOOK-SIGNATURE"]) ||
+        headers["webhook-signature"] ||
+        headers["Webhook-Signature"] ||
+        headers["WEBHOOK-SIGNATURE"] ||
+        headers["x-supabase-signature"] ||
         undefined;
 
       const verified = wh.verify(payload, signatureHeader ? { "webhook-signature": signatureHeader } : headers) as {
@@ -90,18 +95,27 @@ serve(async (req) => {
       console.error("auth-email-hook: signature verification failed, attempting JSON parse fallback", verifyError?.message || verifyError);
       try {
         const body = JSON.parse(payload);
-        userEmail = body?.user?.email;
-        token = body?.email_data?.token;
-        token_hash = body?.email_data?.token_hash;
-        redirect_to = body?.email_data?.redirect_to ?? '';
-        email_action_type = body?.email_data?.email_action_type ?? 'signup';
+        userEmail = body?.user?.email ?? body?.email ?? body?.record?.email;
+        token = body?.email_data?.token ?? body?.token ?? body?.otp ?? '';
+        token_hash = body?.email_data?.token_hash ?? body?.token_hash ?? body?.record?.token_hash ?? '';
+        redirect_to = body?.email_data?.redirect_to ?? body?.redirect_to ?? body?.redirectTo ?? '';
+        email_action_type = body?.email_data?.email_action_type ?? body?.email_action_type ?? body?.type ?? 'signup';
       } catch (jsonErr) {
         console.error("auth-email-hook: JSON parse failed", jsonErr?.message || jsonErr);
         throw new Error("Invalid webhook payload");
       }
     }
 
-    const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${token_hash}&type=${email_action_type}&redirect_to=${encodeURIComponent(redirect_to)}`;
+    // Basic validation to avoid failing the hook
+    if (!userEmail || !token_hash) {
+      console.error("auth-email-hook: missing required fields", { hasEmail: Boolean(userEmail), hasTokenHash: Boolean(token_hash) });
+      return new Response(JSON.stringify({ ok: true, skipped: true, reason: "missing required fields" }), {
+        status: 200,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
+    const verifyUrl = `${supabaseUrl}/auth/v1/verify?token_hash=${encodeURIComponent(token_hash)}&type=${encodeURIComponent(email_action_type)}${redirect_to ? `&redirect_to=${encodeURIComponent(redirect_to)}` : ''}`;
 
     const html = `
       <h1>Complete your sign in</h1>
