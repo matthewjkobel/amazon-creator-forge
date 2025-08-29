@@ -35,11 +35,11 @@ export const getRedirectPath = async (userId: string): Promise<string> => {
       return "/brand-dashboard";
     }
 
-    // Default: assume they want to be a creator if no profile exists
-    return "/creator-profile";
+    // No profile exists - redirect to role selection
+    return "/role-selection";
   } catch (error) {
     console.error("Error determining redirect path:", error);
     // Default fallback
-    return "/creator-profile";
+    return "/role-selection";
   }
 };

@@ -9,6 +9,7 @@ import Directory from "./pages/Directory";
 import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import Auth from "./pages/Auth";
+import RoleSelection from "./pages/RoleSelection";
 import CreatorProfile from "./pages/CreatorProfile";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import BrandDashboard from "./pages/BrandDashboard";
@@ -30,6 +31,7 @@ const App = () => {
               <Route path="/how-it-works" element={<HowItWorks />} />
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/auth" element={<Auth />} />
+              <Route path="/role-selection" element={<RoleSelection />} />
               <Route path="/creator-profile" element={<CreatorProfile />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
               <Route path="/brand-dashboard" element={<BrandDashboard />} />
