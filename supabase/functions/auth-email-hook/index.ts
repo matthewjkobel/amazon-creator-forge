@@ -38,7 +38,7 @@ serve(async (req) => {
     });
 
     if (!hookSecret) {
-      console.log("auth-email-hook: no webhook secret configured, parsing payload directly");
+      console.warn("Missing webhook secret - proceeding without signature verification (will parse JSON payload)");
     }
     if (!resendKey) {
       console.warn("Missing RESEND_API_KEY - will skip sending email but return 200 to avoid blocking signup");
@@ -63,39 +63,39 @@ serve(async (req) => {
     let email_action_type: string;
 
     try {
-      if (hookSecret) {
-        const wh = new Webhook(hookSecret);
-        const signatureHeader =
-          headers["webhook-signature"] ||
-          headers["Webhook-Signature"] ||
-          headers["WEBHOOK-SIGNATURE"] ||
-          headers["x-supabase-signature"] ||
-          undefined;
+      const wh = new Webhook(hookSecret);
+      const signatureHeader =
+        headers["webhook-signature"] ||
+        headers["Webhook-Signature"] ||
+        headers["WEBHOOK-SIGNATURE"] ||
+        headers["x-supabase-signature"] ||
+        undefined;
 
-        const verified = wh.verify(payload, signatureHeader ? { "webhook-signature": signatureHeader } : headers) as {
-          user: { email: string };
-          email_data: {
-            token: string;
-            token_hash: string;
-            redirect_to: string;
-            email_action_type: string;
-          };
+      const verified = wh.verify(payload, signatureHeader ? { "webhook-signature": signatureHeader } : headers) as {
+        user: { email: string };
+        email_data: {
+          token: string;
+          token_hash: string;
+          redirect_to: string;
+          email_action_type: string; // e.g., signup, magiclink, recovery, email_change
         };
+      };
 
-        userEmail = verified.user.email;
-        ({ token, token_hash, redirect_to, email_action_type } = verified.email_data);
-      } else {
-        // No secret configured, parse JSON directly
+      userEmail = verified.user.email;
+      ({ token, token_hash, redirect_to, email_action_type } = verified.email_data);
+    } catch (verifyError) {
+      console.error("auth-email-hook: signature verification failed, attempting JSON parse fallback", verifyError?.message || verifyError);
+      try {
         const body = JSON.parse(payload);
         userEmail = body?.user?.email ?? body?.email ?? body?.record?.email;
         token = body?.email_data?.token ?? body?.token ?? body?.otp ?? '';
         token_hash = body?.email_data?.token_hash ?? body?.token_hash ?? body?.record?.token_hash ?? '';
         redirect_to = body?.email_data?.redirect_to ?? body?.redirect_to ?? body?.redirectTo ?? '';
         email_action_type = body?.email_data?.email_action_type ?? body?.email_action_type ?? body?.type ?? 'signup';
+      } catch (jsonErr) {
+        console.error("auth-email-hook: JSON parse failed", jsonErr?.message || jsonErr);
+        throw new Error("Invalid webhook payload");
       }
-    } catch (parseError) {
-      console.error("auth-email-hook: failed to parse webhook payload", parseError?.message || parseError);
-      throw new Error("Invalid webhook payload");
     }
 
     // Basic validation to avoid failing the hook
@@ -109,51 +109,15 @@ serve(async (req) => {
 
     const verifyUrl = `${supabaseUrl}/auth/v1/verify?token=${encodeURIComponent(token_hash)}&type=${encodeURIComponent(email_action_type)}${redirect_to ? `&redirect_to=${encodeURIComponent(redirect_to)}` : ''}`;
 
-    const actionText = email_action_type === 'recovery' ? 'Reset Your Password' : 
-                       email_action_type === 'email_change' ? 'Confirm Email Change' :
-                       'Complete Your Sign Up';
-
-    const actionDescription = email_action_type === 'recovery' ? 'Click the button below to reset your password:' :
-                             email_action_type === 'email_change' ? 'Click the button below to confirm your email change:' :
-                             'Welcome to Partner Connections! Click the button below to activate your account:';
-
     const html = `
-      <!DOCTYPE html>
-      <html>
-        <head>
-          <meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${actionText} - Partner Connections</title>
-        </head>
-        <body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; line-height: 1.6; color: #333; max-width: 600px; margin: 0 auto; padding: 20px;">
-          <div style="text-align: center; margin-bottom: 40px;">
-            <h1 style="color: #1a73e8; margin: 0; font-size: 24px;">Partner Connections</h1>
-            <p style="color: #666; margin: 8px 0 0 0; font-size: 14px;">The Premier Creator Partnership Platform</p>
-          </div>
-          
-          <div style="background: #f8f9fa; border-radius: 12px; padding: 32px; text-align: center; margin-bottom: 24px;">
-            <h2 style="color: #333; margin: 0 0 16px 0; font-size: 20px;">${actionText}</h2>
-            <p style="color: #666; margin: 0 0 24px 0; font-size: 16px;">${actionDescription}</p>
-            
-            <a href="${verifyUrl}" 
-               style="display: inline-block; background: #1a73e8; color: white; text-decoration: none; padding: 14px 28px; border-radius: 8px; font-weight: 600; font-size: 16px; margin-bottom: 20px;">
-              ${actionText}
-            </a>
-            
-            <div style="margin-top: 24px; padding: 16px; background: white; border-radius: 8px; border: 1px solid #e8eaed;">
-              <p style="color: #666; margin: 0 0 8px 0; font-size: 14px;">Or copy this verification code:</p>
-              <code style="display: inline-block; background: #f1f3f4; padding: 8px 12px; border-radius: 4px; font-family: monospace; font-size: 16px; color: #333; letter-spacing: 2px;">${token}</code>
-            </div>
-          </div>
-          
-          <div style="text-align: center; color: #666; font-size: 12px;">
-            <p>If you didn't request this, you can safely ignore this email.</p>
-            <p style="margin-top: 20px;">
-              <a href="https://partnerconnections.com" style="color: #1a73e8; text-decoration: none;">Visit Partner Connections</a>
-            </p>
-          </div>
-        </body>
-      </html>
+      <h1>Complete your sign in</h1>
+      <p>Click the button below to continue:</p>
+      <p>
+        <a href="${verifyUrl}" target="_blank" style="display:inline-block;padding:12px 18px;background:#1f2937;color:#ffffff;text-decoration:none;border-radius:6px;">Continue</a>
+      </p>
+      <p>Or copy this temporary code:</p>
+      <code style="display:inline-block;padding:12px;background:#f4f4f5;border:1px solid #e4e4e7;border-radius:6px;">${token}</code>
+      <p style="color:#6b7280;font-size:12px">If you didn’t request this, you can safely ignore this email.</p>
     `;
 
     let sendError: any = null;
@@ -168,7 +132,7 @@ serve(async (req) => {
         const result = await resend.emails.send({
           from: "Partner Connections <no-reply@mail.partnerconnections.com>",
           to: [userEmail],
-          subject: actionText + " - Partner Connections",
+          subject: "Your secure sign-in link",
           html,
         });
         console.log("auth-email-hook: Resend API response", result);
