@@ -7,7 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Users, Mail, Lock, AlertCircle, Chrome } from "lucide-react";
+import { Users, Mail, Lock, AlertCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { getRedirectPath } from "@/utils/authRedirect";
@@ -15,7 +15,7 @@ import { getRedirectPath } from "@/utils/authRedirect";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState<"creator" | "brand">("creator");
+  
   const [loading, setLoading] = useState(false);
   const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
@@ -83,7 +83,6 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
-            user_type: userType,
           }
         }
       });
@@ -103,27 +102,6 @@ const Auth = () => {
     }
   };
 
-  const handleGoogleSignIn = async () => {
-    setLoading(true);
-    setError("");
-
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-
-      if (error) {
-        setError(error.message);
-      }
-    } catch (err) {
-      setError("Failed to sign in with Google. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
@@ -199,27 +177,6 @@ const Auth = () => {
 
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label>I want to join as a</Label>
-                    <div className="grid grid-cols-2 gap-2">
-                      <Button
-                        type="button"
-                        variant={userType === "creator" ? "default" : "outline"}
-                        onClick={() => setUserType("creator")}
-                        className="w-full"
-                      >
-                        Creator
-                      </Button>
-                      <Button
-                        type="button"
-                        variant={userType === "brand" ? "default" : "outline"}
-                        onClick={() => setUserType("brand")}
-                        className="w-full"
-                      >
-                        Brand
-                      </Button>
-                    </div>
-                  </div>
 
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
@@ -272,27 +229,6 @@ const Auth = () => {
                 </form>
               </TabsContent>
 
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={handleGoogleSignIn}
-                disabled={loading}
-              >
-                <Chrome className="mr-2 h-4 w-4" />
-                Google
-              </Button>
             </Tabs>
 
             <div className="mt-6 text-center text-sm text-muted-foreground">
