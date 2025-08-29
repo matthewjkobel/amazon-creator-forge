@@ -123,15 +123,25 @@ serve(async (req) => {
     let sendError: any = null;
     if (resendKey) {
       const resend = new Resend(resendKey);
-      console.log("auth-email-hook: attempting to send email via Resend", { hasUserEmail: Boolean(userEmail) });
+      console.log("auth-email-hook: attempting to send email via Resend", { 
+        hasUserEmail: Boolean(userEmail),
+        userEmail: userEmail,
+        hasHTML: Boolean(html)
+      });
       try {
-        await resend.emails.send({
+        const result = await resend.emails.send({
           from: "Lovable <onboarding@resend.dev>",
           to: [userEmail],
           subject: "Your secure sign-in link",
           html,
         });
-        console.log("auth-email-hook: email sent to", userEmail);
+        console.log("auth-email-hook: Resend API response", result);
+        if (result.error) {
+          sendError = result.error;
+          console.error("auth-email-hook: Resend API returned error", result.error);
+        } else {
+          console.log("auth-email-hook: email sent successfully to", userEmail, "with ID:", result.data?.id);
+        }
       } catch (e: any) {
         sendError = e?.message || e;
         console.error("auth-email-hook: Resend send failed", sendError);
