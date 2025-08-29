@@ -10,7 +10,6 @@ import HowItWorks from "./pages/HowItWorks";
 import Pricing from "./pages/Pricing";
 import Auth from "./pages/Auth";
 import CreatorProfile from "./pages/CreatorProfile";
-import RoleSelection from "./pages/RoleSelection";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import BrandDashboard from "./pages/BrandDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
@@ -32,7 +31,6 @@ const App = () => {
               <Route path="/pricing" element={<Pricing />} />
               <Route path="/auth" element={<Auth />} />
               <Route path="/creator-profile" element={<CreatorProfile />} />
-              <Route path="/role-selection" element={<RoleSelection />} />
               <Route path="/creator-dashboard" element={<CreatorDashboard />} />
               <Route path="/brand-dashboard" element={<BrandDashboard />} />
               <Route path="/admin-dashboard" element={<AdminDashboard />} />
