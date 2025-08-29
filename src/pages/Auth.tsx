@@ -15,8 +15,9 @@ import { getRedirectPath } from "@/utils/authRedirect";
 const Auth = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [fullName, setFullName] = useState("");
+  const [userType, setUserType] = useState<"creator" | "brand">("creator");
   const [loading, setLoading] = useState(false);
+  const [fullName, setFullName] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -82,6 +83,7 @@ const Auth = () => {
           emailRedirectTo: redirectUrl,
           data: {
             full_name: fullName,
+            user_type: userType,
           }
         }
       });
@@ -197,6 +199,28 @@ const Auth = () => {
 
               <TabsContent value="signup" className="space-y-4">
                 <form onSubmit={handleSignUp} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>I want to join as a</Label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        variant={userType === "creator" ? "default" : "outline"}
+                        onClick={() => setUserType("creator")}
+                        className="w-full"
+                      >
+                        Creator
+                      </Button>
+                      <Button
+                        type="button"
+                        variant={userType === "brand" ? "default" : "outline"}
+                        onClick={() => setUserType("brand")}
+                        className="w-full"
+                      >
+                        Brand
+                      </Button>
+                    </div>
+                  </div>
+
                   <div className="space-y-2">
                     <Label htmlFor="signup-name">Full Name</Label>
                     <Input
