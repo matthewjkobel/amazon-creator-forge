@@ -500,10 +500,23 @@ const CreatorProfile = () => {
   };
 
   const handleSubmitForApproval = async () => {
-    if (!creatorData) return;
+    console.log("Starting submit for approval process");
+    console.log("Creator data:", creatorData);
+    console.log("User:", user);
+    
+    if (!creatorData) {
+      console.error("No creator data found");
+      toast({
+        title: "Error",
+        description: "No creator profile found. Please save your profile first.",
+        variant: "destructive"
+      });
+      return;
+    }
 
     // Check submission limit (max 5 attempts)
     if (creatorData.submission_count >= 5) {
+      console.log("Submission limit reached:", creatorData.submission_count);
       toast({
         title: "Submission Limit Reached",
         description: "You have reached the maximum number of submission attempts. Please contact support.",
@@ -512,6 +525,7 @@ const CreatorProfile = () => {
       return;
     }
 
+    console.log("Proceeding with approval submission");
     setLoading(true);
     try {
       const { error } = await supabase
@@ -540,9 +554,16 @@ const CreatorProfile = () => {
       });
     } catch (error) {
       console.error("Error submitting for approval:", error);
+      console.log("Full approval error details:", JSON.stringify(error, null, 2));
+      
+      // Check if it's a specific database error
+      if (error?.message) {
+        console.log("Approval error message:", error.message);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to submit for approval. Please try again.",
+        description: `Failed to submit for approval: ${error?.message || 'Unknown error'}. Please try again.`,
         variant: "destructive"
       });
     } finally {
