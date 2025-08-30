@@ -27,12 +27,17 @@ export const getRedirectPath = async (userId: string): Promise<string> => {
     // Check if user has a brand profile
     const { data: brand, error: brandError } = await supabase
       .from("brands")
-      .select("id")
+      .select("id, company_name, contact_name, contact_email")
       .eq("user_id", userId)
       .maybeSingle();
 
     if (brand && !brandError) {
-      return "/brand-dashboard";
+      // Check if brand profile is complete
+      if (brand.company_name && brand.contact_name && brand.contact_email) {
+        return "/brand-dashboard";
+      } else {
+        return "/brand-profile";
+      }
     }
 
     // No profile exists - redirect to role selection

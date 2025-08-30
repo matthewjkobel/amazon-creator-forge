@@ -66,7 +66,7 @@ const RoleSelection = () => {
           title: "Welcome to PartnerConnections!",
           description: "Your brand profile has been created successfully.",
         });
-        navigate("/brand-dashboard");
+        navigate("/brand-profile");
       }
     } catch (err) {
       setError("An unexpected error occurred. Please try again.");

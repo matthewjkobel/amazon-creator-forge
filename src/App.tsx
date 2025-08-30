@@ -14,6 +14,7 @@ import Auth from "./pages/Auth";
 import RoleSelection from "./pages/RoleSelection";
 import CreatorProfile from "./pages/CreatorProfile";
 import CreatorDashboard from "./pages/CreatorDashboard";
+import BrandProfile from "./pages/BrandProfile";
 import BrandDashboard from "./pages/BrandDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailTest from "./pages/EmailTest";
@@ -57,6 +58,7 @@ const AuthRouter = () => {
       <Route path="/role-selection" element={<RoleSelection />} />
       <Route path="/creator-profile" element={<CreatorProfile />} />
       <Route path="/creator-dashboard" element={<CreatorDashboard />} />
+      <Route path="/brand-profile" element={<BrandProfile />} />
       <Route path="/brand-dashboard" element={<BrandDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/email-test" element={<EmailTest />} />

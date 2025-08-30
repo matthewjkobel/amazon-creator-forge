@@ -513,6 +513,15 @@ export type Database = {
         Args: { _new_role: string; _requester: string; _target: string }
         Returns: boolean
       }
+      ensure_user_row: {
+        Args: {
+          p_email: string
+          p_full_name: string
+          p_id: string
+          p_role?: string
+        }
+        Returns: undefined
+      }
       is_admin: {
         Args: { _user_id: string }
         Returns: boolean
