@@ -32,9 +32,9 @@ const AuthRouter = () => {
       // Don't redirect if still loading or user is not authenticated
       if (loading || !user) return;
       
-      // Don't redirect if user is on auth-related routes (for email verification, etc.)
-      const authRoutes = ['/auth', '/role-selection'];
-      if (authRoutes.includes(location.pathname)) return;
+      // Don't redirect if user is on auth-related or profile editing routes
+      const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile'];
+      if (excludedRoutes.includes(location.pathname)) return;
       
       // Get appropriate redirect path based on user's profile
       const redirectPath = await getRedirectPath(user.id);
