@@ -339,7 +339,18 @@ const CreatorProfile = () => {
   };
 
   const onSubmit = async (data: ProfileFormData) => {
-    if (!user) return;
+    if (!user) {
+      console.error("No authenticated user found");
+      toast({
+        title: "Authentication Error",
+        description: "Please log in to save your profile.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    console.log("Starting profile save for user:", user.id);
+    console.log("Form data:", data);
 
     setLoading(true);
     try {
@@ -347,7 +358,9 @@ const CreatorProfile = () => {
       
       // Upload headshot if provided
       if (data.headshotFile) {
+        console.log("Uploading headshot file:", data.headshotFile.name);
         headshotUrl = await uploadHeadshot(data.headshotFile, user.id);
+        console.log("Headshot uploaded successfully:", headshotUrl);
       }
 
       // Upsert creator profile
