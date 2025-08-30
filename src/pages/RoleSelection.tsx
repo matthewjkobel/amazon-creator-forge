@@ -28,6 +28,19 @@ const RoleSelection = () => {
     setError("");
 
     try {
+      // First ensure user exists in public.users table
+      const { error: userError } = await supabase.rpc('ensure_user_row', {
+        p_id: user.id,
+        p_email: user.email || '',
+        p_full_name: user.user_metadata?.full_name || '',
+        p_role: selectedRole === "creator" ? 'creator' : 'brand'
+      });
+
+      if (userError) {
+        setError("Failed to set up user profile. Please try again.");
+        return;
+      }
+
       if (selectedRole === "creator") {
         // Create creator profile
         const { error } = await supabase
