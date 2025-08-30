@@ -52,21 +52,23 @@ const headshotSchema = z.any().optional().refine((file) => {
   // Check if it's a file
   if (!(file instanceof File)) return true;
   
-  // Check file size (max 10MB)
-  if (file.size > 10 * 1024 * 1024) return false;
+  // Check file size (max 15MB)
+  if (file.size > 15 * 1024 * 1024) return false;
   
   // Check file type
   if (!file.type.startsWith('image/')) return false;
   
   return true;
-}, "Please upload an image file under 10MB");
+}, "Please upload an image file under 15MB");
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
   location: z.string().optional(),
   bio: z.string().min(10, "About me must be at least 10 characters").max(1000, "About me must be 1000 characters or less"),
   storefrontUrl: flexibleUrlSchema,
-  featuredVideoUrl: flexibleUrlSchema,
+  featuredContentUrl1: flexibleUrlSchema,
+  featuredContentUrl2: flexibleUrlSchema,
+  featuredContentUrl3: flexibleUrlSchema,
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
   selectedNiches: z.array(z.string()).min(1, "Please select at least one niche"),
@@ -85,6 +87,8 @@ const CreatorProfile = () => {
   const [creatorData, setCreatorData] = useState<any>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [headshotPreview, setHeadshotPreview] = useState<string>("");
+  const [imageZoom, setImageZoom] = useState(1);
+  const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -93,7 +97,9 @@ const CreatorProfile = () => {
       location: "",
       bio: "",
       storefrontUrl: "",
-      featuredVideoUrl: "",
+      featuredContentUrl1: "",
+      featuredContentUrl2: "",
+      featuredContentUrl3: "",
       priceMin: "",
       priceMax: "",
       selectedNiches: [],
@@ -170,7 +176,9 @@ const CreatorProfile = () => {
             location: creator.location || "",
             bio: creator.bio || "",
             storefrontUrl: creator.storefront_url || "",
-            featuredVideoUrl: creator.featured_video_url || "",
+            featuredContentUrl1: creator.featured_video_url || "",
+            featuredContentUrl2: "",
+            featuredContentUrl3: "",
             priceMin: creator.price_min?.toString() || "",
             priceMax: creator.price_max?.toString() || "",
             selectedNiches,
@@ -202,7 +210,7 @@ const CreatorProfile = () => {
         location: formData.location,
         bio: formData.bio,
         storefront_url: formData.storefrontUrl,
-        featured_video_url: formData.featuredVideoUrl,
+        featured_video_url: formData.featuredContentUrl1,
         price_min: formData.priceMin ? parseInt(formData.priceMin) : null,
         price_max: formData.priceMax ? parseInt(formData.priceMax) : null
       };
@@ -372,7 +380,7 @@ const CreatorProfile = () => {
         location: data.location,
         bio: data.bio,
         storefront_url: data.storefrontUrl,
-        featured_video_url: data.featuredVideoUrl,
+        featured_video_url: data.featuredContentUrl1,
         price_min: data.priceMin ? parseInt(data.priceMin) : null,
         price_max: data.priceMax ? parseInt(data.priceMax) : null
       };
@@ -683,41 +691,41 @@ const CreatorProfile = () => {
                      <FormItem>
                        <FormLabel>Profile Photo</FormLabel>
                        <FormControl>
-                         <div className="space-y-4">
-                           {(headshotPreview || value) && (
-                             <div className="flex items-center gap-4">
-                               <Avatar className="h-20 w-20">
-                                 <AvatarImage 
-                                   src={value ? URL.createObjectURL(value) : headshotPreview} 
-                                   alt="Profile preview" 
-                                 />
-                                 <AvatarFallback>
-                                   {form.getValues("displayName")?.charAt(0)?.toUpperCase() || "P"}
-                                 </AvatarFallback>
-                               </Avatar>
-                               <div className="text-sm text-muted-foreground">
-                                 Preview - this is how your photo will appear in the directory
-                               </div>
-                             </div>
-                           )}
-                           <Input
-                             type="file"
-                             accept="image/*"
-                             onChange={(e) => {
-                               const file = e.target.files?.[0];
-                               onChange(file);
-                               // Create preview URL for new files
-                               if (file) {
-                                 setHeadshotPreview(URL.createObjectURL(file));
-                               }
-                             }}
-                             {...field}
-                           />
-                         </div>
+                          <div className="space-y-4">
+                            {(headshotPreview || value) && (
+                              <div className="flex flex-col items-center gap-4">
+                                <Avatar className="h-32 w-32">
+                                  <AvatarImage 
+                                    src={value ? URL.createObjectURL(value) : headshotPreview} 
+                                    alt="Profile preview" 
+                                  />
+                                  <AvatarFallback className="text-2xl">
+                                    {form.getValues("displayName")?.charAt(0)?.toUpperCase() || "P"}
+                                  </AvatarFallback>
+                                </Avatar>
+                                <div className="text-sm text-muted-foreground text-center">
+                                  Preview - this is how your photo will appear in the directory
+                                </div>
+                              </div>
+                            )}
+                            <Input
+                              type="file"
+                              accept="image/*"
+                              onChange={(e) => {
+                                const file = e.target.files?.[0];
+                                onChange(file);
+                                // Create preview URL for new files
+                                if (file) {
+                                  setHeadshotPreview(URL.createObjectURL(file));
+                                }
+                              }}
+                              {...field}
+                            />
+                          </div>
                        </FormControl>
-                       <div className="text-sm text-muted-foreground">
-                         Upload an image file (max 10MB). Supports JPG, PNG, GIF, etc.
-                       </div>
+                        <div className="text-sm text-muted-foreground">
+                          Upload an image file (max 15MB). Supports JPG, PNG, GIF, etc.
+                        </div>
                        <FormMessage />
                      </FormItem>
                    )}
@@ -771,15 +779,49 @@ const CreatorProfile = () => {
 
                 <FormField
                   control={form.control}
-                  name="featuredVideoUrl"
+                  name="featuredContentUrl1"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <Video className="h-4 w-4" />
-                        Featured Content Examples
+                        Featured Content Example 1
                       </FormLabel>
                       <FormControl>
-                        <Input placeholder="Link to your best content examples" {...field} />
+                        <Input placeholder="Link to your best content example" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="featuredContentUrl2"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Featured Content Example 2
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Link to another content example (optional)" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="featuredContentUrl3"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="flex items-center gap-2">
+                        <Video className="h-4 w-4" />
+                        Featured Content Example 3
+                      </FormLabel>
+                      <FormControl>
+                        <Input placeholder="Link to another content example (optional)" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>

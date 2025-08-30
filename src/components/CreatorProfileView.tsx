@@ -121,9 +121,9 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-6">
-            <Avatar className="h-24 w-24 mx-auto sm:mx-0">
+            <Avatar className="h-32 w-32 mx-auto sm:mx-0">
               <AvatarImage src={creator.headshot_url || creator.avatar_url} alt={creator.display_name} />
-              <AvatarFallback className="text-lg">
+              <AvatarFallback className="text-xl">
                 {getInitials(creator.display_name)}
               </AvatarFallback>
             </Avatar>
@@ -252,29 +252,46 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
       </div>
 
       {/* Links */}
-      {(creator.storefront_url || creator.featured_video_url) && (
+      {creator.storefront_url && (
         <Card>
           <CardHeader>
             <CardTitle>Links</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              {creator.storefront_url && (
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href={creator.storefront_url} target="_blank" rel="noopener noreferrer">
-                    <ExternalLink className="h-4 w-4 mr-2" />
-                    Amazon Storefront
-                  </a>
-                </Button>
-              )}
-              {creator.featured_video_url && (
-                <Button variant="outline" className="w-full justify-start" asChild>
-                  <a href={creator.featured_video_url} target="_blank" rel="noopener noreferrer">
-                    <Video className="h-4 w-4 mr-2" />
-                    Featured Content
-                  </a>
-                </Button>
-              )}
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <a 
+                  href={creator.storefront_url.startsWith('http') ? creator.storefront_url : `https://${creator.storefront_url}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Amazon Storefront
+                </a>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Featured Content */}
+      {creator.featured_video_url && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Featured Content Examples</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              <Button variant="outline" className="w-full justify-start" asChild>
+                <a 
+                  href={creator.featured_video_url.startsWith('http') ? creator.featured_video_url : `https://${creator.featured_video_url}`}
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                >
+                  <Video className="h-4 w-4 mr-2" />
+                  Content Example 1
+                </a>
+              </Button>
             </div>
           </CardContent>
         </Card>
