@@ -77,6 +77,8 @@ export type Database = {
         Row: {
           about: string | null
           amazon_storefront_url: string | null
+          approval_status: string | null
+          approved_at: string | null
           company_name: string
           contact_email: string | null
           contact_name: string | null
@@ -84,12 +86,16 @@ export type Database = {
           id: string
           logo_url: string | null
           notes: string | null
+          submission_count: number | null
+          submitted_at: string | null
           user_id: string | null
           website_url: string | null
         }
         Insert: {
           about?: string | null
           amazon_storefront_url?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
           company_name: string
           contact_email?: string | null
           contact_name?: string | null
@@ -97,12 +103,16 @@ export type Database = {
           id?: string
           logo_url?: string | null
           notes?: string | null
+          submission_count?: number | null
+          submitted_at?: string | null
           user_id?: string | null
           website_url?: string | null
         }
         Update: {
           about?: string | null
           amazon_storefront_url?: string | null
+          approval_status?: string | null
+          approved_at?: string | null
           company_name?: string
           contact_email?: string | null
           contact_name?: string | null
@@ -110,6 +120,8 @@ export type Database = {
           id?: string
           logo_url?: string | null
           notes?: string | null
+          submission_count?: number | null
+          submitted_at?: string | null
           user_id?: string | null
           website_url?: string | null
         }
@@ -272,6 +284,8 @@ export type Database = {
       }
       creators: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
           avatar_url: string | null
           avg_views: number | null
           bio: string | null
@@ -286,11 +300,15 @@ export type Database = {
           price_max: number | null
           price_min: number | null
           storefront_url: string | null
+          submission_count: number | null
+          submitted_at: string | null
           user_id: string | null
           visibility: string | null
           website_url: string | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
           avatar_url?: string | null
           avg_views?: number | null
           bio?: string | null
@@ -305,11 +323,15 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           storefront_url?: string | null
+          submission_count?: number | null
+          submitted_at?: string | null
           user_id?: string | null
           visibility?: string | null
           website_url?: string | null
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
           avatar_url?: string | null
           avg_views?: number | null
           bio?: string | null
@@ -324,6 +346,8 @@ export type Database = {
           price_max?: number | null
           price_min?: number | null
           storefront_url?: string | null
+          submission_count?: number | null
+          submitted_at?: string | null
           user_id?: string | null
           visibility?: string | null
           website_url?: string | null

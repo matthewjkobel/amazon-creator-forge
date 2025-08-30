@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Building2, AlertCircle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Building2, AlertCircle, CheckCircle, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -29,6 +30,7 @@ const BrandProfile = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [isEditing, setIsEditing] = useState(false);
+  const [brandData, setBrandData] = useState<any>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
@@ -69,6 +71,7 @@ const BrandProfile = () => {
 
       if (brand) {
         setIsEditing(true);
+        setBrandData(brand);
         setValue("company_name", brand.company_name || "");
         setValue("website_url", brand.website_url || "");
         setValue("amazon_storefront_url", brand.amazon_storefront_url || "");
@@ -80,6 +83,85 @@ const BrandProfile = () => {
 
     loadBrandData();
   }, [user, navigate, setValue]);
+
+  const handleSubmitForApproval = async () => {
+    if (!brandData) return;
+
+    // Check submission limit (max 5 attempts)
+    if (brandData.submission_count >= 5) {
+      toast({
+        title: "Submission Limit Reached",
+        description: "You have reached the maximum number of submission attempts. Please contact support.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("brands")
+        .update({
+          approval_status: 'pending',
+          submitted_at: new Date().toISOString(),
+          submission_count: brandData.submission_count + 1
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Reload brand data to get updated status
+      const { data: updatedBrand } = await supabase
+        .from("brands")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      setBrandData(updatedBrand);
+
+      toast({
+        title: "Submitted for Review",
+        description: "Your brand profile has been submitted for admin approval."
+      });
+    } catch (error) {
+      console.error("Error submitting for approval:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit for approval. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    if (!brandData) return null;
+
+    const statusConfig = {
+      draft: { variant: "secondary" as const, icon: AlertCircle, text: "Draft" },
+      pending: { variant: "default" as const, icon: Clock, text: "Pending Review" },
+      approved: { variant: "default" as const, icon: CheckCircle, text: "Approved" },
+      rejected: { variant: "destructive" as const, icon: XCircle, text: "Rejected" }
+    };
+
+    const config = statusConfig[brandData.approval_status as keyof typeof statusConfig];
+    if (!config) return null;
+
+    const Icon = config.icon;
+    
+    return (
+      <Badge variant={config.variant} className="mb-4">
+        <Icon className="h-3 w-3 mr-1" />
+        {config.text}
+      </Badge>
+    );
+  };
+
+  const shouldShowSubmitButton = () => {
+    if (!brandData) return false;
+    return brandData.approval_status === 'draft' || brandData.approval_status === 'rejected';
+  };
 
   const onSubmit = async (data: BrandFormData) => {
     if (!user) return;
@@ -167,7 +249,10 @@ const BrandProfile = () => {
 
         <Card>
           <CardHeader>
-            <CardTitle>Brand Information</CardTitle>
+            <div className="flex items-center justify-between">
+              <CardTitle>Brand Information</CardTitle>
+              {getStatusBadge()}
+            </div>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -282,6 +367,32 @@ const BrandProfile = () => {
                 </Button>
               </div>
             </form>
+
+            {/* Submit for Approval Button */}
+            {shouldShowSubmitButton() && (
+              <div className="mt-6 pt-6 border-t">
+                <div className="text-center space-y-4">
+                  <div>
+                    <h3 className="font-semibold text-lg">Ready to go live?</h3>
+                    <p className="text-muted-foreground text-sm">
+                      Submit your profile for admin approval to appear in the directory.
+                      {brandData?.submission_count > 0 && (
+                        <span className="block mt-1">
+                          Submission attempts: {brandData.submission_count}/5
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <Button
+                    onClick={handleSubmitForApproval}
+                    disabled={loading}
+                    className="w-full sm:w-auto"
+                  >
+                    {loading ? "Submitting..." : "Submit for Approval"}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

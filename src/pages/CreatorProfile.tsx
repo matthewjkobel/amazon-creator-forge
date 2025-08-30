@@ -6,11 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Users, MapPin, Globe, ShoppingBag, Video, DollarSign, Instagram, Youtube, FileText, ExternalLink, AlertCircle, Check } from "lucide-react";
+import { Users, MapPin, Globe, ShoppingBag, Video, DollarSign, Instagram, Youtube, FileText, ExternalLink, AlertCircle, Check, CheckCircle, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -52,6 +53,7 @@ const CreatorProfile = () => {
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
   const [isExistingCreator, setIsExistingCreator] = useState(false);
+  const [creatorData, setCreatorData] = useState<any>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -95,6 +97,7 @@ const CreatorProfile = () => {
 
         if (creator && !error) {
           setIsExistingCreator(true);
+          setCreatorData(creator);
           
           // Populate form with existing data
           const socialsData: Record<string, string> = {};
@@ -217,6 +220,85 @@ const CreatorProfile = () => {
     }
   };
 
+  const handleSubmitForApproval = async () => {
+    if (!creatorData) return;
+
+    // Check submission limit (max 5 attempts)
+    if (creatorData.submission_count >= 5) {
+      toast({
+        title: "Submission Limit Reached",
+        description: "You have reached the maximum number of submission attempts. Please contact support.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const { error } = await supabase
+        .from("creators")
+        .update({
+          approval_status: 'pending',
+          submitted_at: new Date().toISOString(),
+          submission_count: creatorData.submission_count + 1
+        })
+        .eq("user_id", user.id);
+
+      if (error) throw error;
+
+      // Reload creator data to get updated status
+      const { data: updatedCreator } = await supabase
+        .from("creators")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      setCreatorData(updatedCreator);
+
+      toast({
+        title: "Submitted for Review",
+        description: "Your creator profile has been submitted for admin approval."
+      });
+    } catch (error) {
+      console.error("Error submitting for approval:", error);
+      toast({
+        title: "Error",
+        description: "Failed to submit for approval. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusBadge = () => {
+    if (!creatorData) return null;
+
+    const statusConfig = {
+      draft: { variant: "secondary" as const, icon: AlertCircle, text: "Draft" },
+      pending: { variant: "default" as const, icon: Clock, text: "Pending Review" },
+      approved: { variant: "default" as const, icon: CheckCircle, text: "Approved" },
+      rejected: { variant: "destructive" as const, icon: XCircle, text: "Rejected" }
+    };
+
+    const config = statusConfig[creatorData.approval_status as keyof typeof statusConfig];
+    if (!config) return null;
+
+    const Icon = config.icon;
+    
+    return (
+      <Badge variant={config.variant} className="mb-4">
+        <Icon className="h-3 w-3 mr-1" />
+        {config.text}
+      </Badge>
+    );
+  };
+
+  const shouldShowSubmitButton = () => {
+    if (!creatorData) return false;
+    return creatorData.approval_status === 'draft' || creatorData.approval_status === 'rejected';
+  };
+
   if (authLoading) {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
@@ -231,15 +313,18 @@ const CreatorProfile = () => {
       
       <div className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">
-            {isExistingCreator ? "Update Your Profile" : "Create Your Creator Profile"}
-          </h1>
-          <p className="text-muted-foreground">
-            {isExistingCreator 
-              ? "Keep your profile up to date to attract the best brand partnerships."
-              : "Tell brands about yourself and showcase what makes you special."
-            }
-          </p>
+          <div className="flex flex-col items-center gap-2">
+            {getStatusBadge()}
+            <h1 className="text-3xl font-bold mb-2">
+              {isExistingCreator ? "Update Your Profile" : "Create Your Creator Profile"}
+            </h1>
+            <p className="text-muted-foreground">
+              {isExistingCreator 
+                ? "Keep your profile up to date to attract the best brand partnerships."
+                : "Tell brands about yourself and showcase what makes you special."
+              }
+            </p>
+          </div>
         </div>
 
         <Form {...form}>
@@ -481,6 +566,32 @@ const CreatorProfile = () => {
               </Button>
             </div>
           </form>
+
+          {/* Submit for Approval Button */}
+          {shouldShowSubmitButton() && (
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-center space-y-4">
+                <div>
+                  <h3 className="font-semibold text-lg">Ready to go live?</h3>
+                  <p className="text-muted-foreground text-sm">
+                    Submit your profile for admin approval to appear in the directory.
+                    {creatorData?.submission_count > 0 && (
+                      <span className="block mt-1">
+                        Submission attempts: {creatorData.submission_count}/5
+                      </span>
+                    )}
+                  </p>
+                </div>
+                <Button
+                  onClick={handleSubmitForApproval}
+                  disabled={loading}
+                  className="w-full sm:w-auto"
+                >
+                  {loading ? "Submitting..." : "Submit for Approval"}
+                </Button>
+              </div>
+            </div>
+          )}
         </Form>
       </div>
     </div>
