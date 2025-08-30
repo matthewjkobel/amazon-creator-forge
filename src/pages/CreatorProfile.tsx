@@ -207,7 +207,7 @@ const CreatorProfile = () => {
 
       const { data: creator, error: creatorError } = await supabase
         .from("creators")
-        .upsert(updateData)
+        .upsert(updateData, { onConflict: 'user_id' })
         .select()
         .single();
 
@@ -381,7 +381,7 @@ const CreatorProfile = () => {
 
       const { data: creator, error: creatorError } = await supabase
         .from("creators")
-        .upsert(updateData)
+        .upsert(updateData, { onConflict: 'user_id' })
         .select()
         .single();
 
