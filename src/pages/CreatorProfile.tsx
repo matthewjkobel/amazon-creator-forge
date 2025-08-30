@@ -11,6 +11,7 @@ import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Users, MapPin, Globe, ShoppingBag, Video, DollarSign, Instagram, Youtube, FileText, ExternalLink, AlertCircle, Check, CheckCircle, Clock, XCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -62,7 +63,7 @@ const headshotSchema = z.any().optional().refine((file) => {
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
-  location: z.string().min(1, "Location is required"),
+  location: z.string().optional(),
   bio: z.string().min(10, "About me must be at least 10 characters").max(1000, "About me must be 1000 characters or less"),
   storefrontUrl: flexibleUrlSchema,
   featuredVideoUrl: flexibleUrlSchema,
@@ -83,6 +84,7 @@ const CreatorProfile = () => {
   const [isExistingCreator, setIsExistingCreator] = useState(false);
   const [creatorData, setCreatorData] = useState<any>(null);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [headshotPreview, setHeadshotPreview] = useState<string>("");
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -172,6 +174,11 @@ const CreatorProfile = () => {
             selectedNiches,
             socials: socialsData
           });
+
+          // Set existing headshot preview if available
+          if (creator.headshot_url) {
+            setHeadshotPreview(creator.headshot_url);
+          }
         }
       } catch (err) {
         console.error("Error loading creator profile:", err);
@@ -181,11 +188,12 @@ const CreatorProfile = () => {
     loadCreatorProfile();
   }, [user, form]);
 
-  // Auto-save to database every 30 seconds
+  // Auto-save to database
   const autoSaveToDatabase = useCallback(async (formData: ProfileFormData) => {
     if (!user || !autoSaveEnabled) return;
 
     try {
+      // First upsert the creator profile
       const updateData: any = {
         user_id: user.id,
         display_name: formData.displayName,
@@ -197,9 +205,95 @@ const CreatorProfile = () => {
         price_max: formData.priceMax ? parseInt(formData.priceMax) : null
       };
 
-      await supabase
+      const { data: creator, error: creatorError } = await supabase
         .from("creators")
-        .upsert(updateData);
+        .upsert(updateData)
+        .select()
+        .single();
+
+      if (creatorError) throw creatorError;
+
+      // Auto-save niches if they exist
+      if (creator && formData.selectedNiches?.length > 0) {
+        // Delete existing niches
+        await supabase
+          .from("creator_niches")
+          .delete()
+          .eq("creator_id", creator.id);
+
+        // Insert new niches
+        const { data: nicheData } = await supabase
+          .from("niches")
+          .select("id, name")
+          .in("name", formData.selectedNiches);
+
+        if (nicheData) {
+          const nicheInserts = nicheData.map(niche => ({
+            creator_id: creator.id,
+            niche_id: niche.id
+          }));
+
+          await supabase
+            .from("creator_niches")
+            .insert(nicheInserts);
+        }
+      }
+
+      // Auto-save social handles if they exist
+      if (creator && formData.socials) {
+        // Delete existing socials
+        await supabase
+          .from("creator_socials")
+          .delete()
+          .eq("creator_id", creator.id);
+
+        // Convert handles to full URLs and insert new socials
+        const socialInserts = Object.entries(formData.socials)
+          .filter(([_, handle]) => handle && handle.trim())
+          .map(([platform, handle]) => {
+            const cleanHandle = handle.trim();
+            let fullUrl = cleanHandle;
+            
+            // Convert handle to full URL based on platform
+            if (!cleanHandle.startsWith('http')) {
+              switch (platform) {
+                case 'youtube':
+                  fullUrl = `https://youtube.com/@${cleanHandle}`;
+                  break;
+                case 'instagram':
+                  fullUrl = `https://instagram.com/${cleanHandle}`;
+                  break;
+                case 'tiktok':
+                  fullUrl = `https://tiktok.com/@${cleanHandle}`;
+                  break;
+                case 'facebook':
+                  fullUrl = `https://facebook.com/${cleanHandle}`;
+                  break;
+                case 'pinterest':
+                  fullUrl = `https://pinterest.com/${cleanHandle}`;
+                  break;
+                case 'x':
+                  fullUrl = `https://x.com/${cleanHandle}`;
+                  break;
+                default:
+                  fullUrl = cleanHandle;
+              }
+            }
+            
+            return {
+              creator_id: creator.id,
+              platform,
+              url: fullUrl,
+              handle: cleanHandle
+            };
+          });
+
+        if (socialInserts.length > 0) {
+          await supabase
+            .from("creator_socials")
+            .insert(socialInserts);
+        }
+      }
 
       console.log("Auto-saved profile data");
     } catch (error) {
@@ -212,8 +306,8 @@ const CreatorProfile = () => {
     const subscription = form.watch((data) => {
       if (!user || !autoSaveEnabled) return;
       
-      // Only auto-save if we have minimum required fields
-      if (data.displayName && data.location && data.bio && data.bio.length >= 10) {
+      // Only auto-save if we have minimum required fields (removed location requirement)
+      if (data.displayName && data.bio && data.bio.length >= 10) {
         const timeoutId = setTimeout(() => {
           autoSaveToDatabase(data as ProfileFormData);
         }, 3000); // Save 3 seconds after user stops typing
@@ -525,7 +619,7 @@ const CreatorProfile = () => {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        Location *
+                        Location
                       </FormLabel>
                       <FormControl>
                         <Input placeholder="City, State/Country" {...field} />
@@ -542,15 +636,37 @@ const CreatorProfile = () => {
                      <FormItem>
                        <FormLabel>Profile Photo</FormLabel>
                        <FormControl>
-                         <Input
-                           type="file"
-                           accept="image/*"
-                           onChange={(e) => {
-                             const file = e.target.files?.[0];
-                             onChange(file);
-                           }}
-                           {...field}
-                         />
+                         <div className="space-y-4">
+                           {(headshotPreview || value) && (
+                             <div className="flex items-center gap-4">
+                               <Avatar className="h-20 w-20">
+                                 <AvatarImage 
+                                   src={value ? URL.createObjectURL(value) : headshotPreview} 
+                                   alt="Profile preview" 
+                                 />
+                                 <AvatarFallback>
+                                   {form.getValues("displayName")?.charAt(0)?.toUpperCase() || "P"}
+                                 </AvatarFallback>
+                               </Avatar>
+                               <div className="text-sm text-muted-foreground">
+                                 Preview - this is how your photo will appear in the directory
+                               </div>
+                             </div>
+                           )}
+                           <Input
+                             type="file"
+                             accept="image/*"
+                             onChange={(e) => {
+                               const file = e.target.files?.[0];
+                               onChange(file);
+                               // Create preview URL for new files
+                               if (file) {
+                                 setHeadshotPreview(URL.createObjectURL(file));
+                               }
+                             }}
+                             {...field}
+                           />
+                         </div>
                        </FormControl>
                        <div className="text-sm text-muted-foreground">
                          Upload an image file (max 10MB). Supports JPG, PNG, GIF, etc.
