@@ -74,6 +74,7 @@ const CreatorProfile = () => {
   useEffect(() => {
     if (!authLoading && !user) {
       navigate("/auth");
+      return;
     }
   }, [user, authLoading, navigate]);
 
