@@ -14,10 +14,26 @@ import {
   Award
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
+import { useEffect } from "react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { getRedirectPath } from "@/utils/authRedirect";
 
 const Home = () => {
   const navigate = useNavigate();
+  const { user, loading } = useAuth();
+
+  // Check if user is authenticated and redirect appropriately
+  useEffect(() => {
+    const handleAuthRedirect = async () => {
+      if (!loading && user) {
+        const redirectPath = await getRedirectPath(user.id);
+        navigate(redirectPath);
+      }
+    };
+
+    handleAuthRedirect();
+  }, [user, loading, navigate]);
 
   const trustBadges = [
     { name: "500+ Creators", icon: Users },
