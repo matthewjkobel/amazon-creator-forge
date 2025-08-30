@@ -122,8 +122,10 @@ const CreatorProfile = () => {
           .select(`
             *,
             creator_socials (*),
-            creator_niches (niche_id),
-            niches (name)
+            creator_niches (
+              niche_id,
+              niches (name)
+            )
           `)
           .eq("user_id", user.id)
           .single();
@@ -160,7 +162,7 @@ const CreatorProfile = () => {
           });
 
           const selectedNiches = creator.creator_niches?.map((cn: any) => 
-            niches.find(n => n === cn.niches?.name)
+            cn.niches?.name
           ).filter(Boolean) || [];
 
           form.reset({

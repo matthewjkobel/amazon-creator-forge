@@ -21,6 +21,7 @@ interface CreatorProfileViewProps {
     creator_socials?: Array<{
       platform: string;
       url: string;
+      handle?: string;
       followers?: number;
       avg_views?: number;
     }>;
@@ -52,11 +53,65 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
   const getPlatformIcon = (platform: string) => {
     switch (platform.toLowerCase()) {
       case 'youtube':
-        return <Video className="h-4 w-4" />;
+        return <Video className="h-4 w-4 text-red-500" />;
       case 'instagram':
-        return <Users className="h-4 w-4" />;
+        return <Users className="h-4 w-4 text-pink-500" />;
+      case 'tiktok':
+        return <Video className="h-4 w-4 text-black" />;
+      case 'facebook':
+        return <ExternalLink className="h-4 w-4 text-blue-600" />;
+      case 'pinterest':
+        return <ExternalLink className="h-4 w-4 text-red-600" />;
+      case 'x':
+        return <ExternalLink className="h-4 w-4 text-black" />;
       default:
         return <ExternalLink className="h-4 w-4" />;
+    }
+  };
+
+  const getPlatformName = (platform: string) => {
+    switch (platform.toLowerCase()) {
+      case 'youtube':
+        return 'YouTube';
+      case 'instagram':
+        return 'Instagram';
+      case 'tiktok':
+        return 'TikTok';
+      case 'facebook':
+        return 'Facebook';
+      case 'pinterest':
+        return 'Pinterest';
+      case 'x':
+        return 'X (Twitter)';
+      default:
+        return platform.charAt(0).toUpperCase() + platform.slice(1);
+    }
+  };
+
+  const getSocialMediaUrl = (platform: string, handle: string, url?: string) => {
+    // If full URL exists, use it
+    if (url && url.startsWith('http')) {
+      return url;
+    }
+    
+    // Otherwise, construct URL from handle
+    const cleanHandle = handle?.replace(/^@/, '') || '';
+    
+    switch (platform.toLowerCase()) {
+      case 'youtube':
+        return `https://youtube.com/@${cleanHandle}`;
+      case 'instagram':
+        return `https://instagram.com/${cleanHandle}`;
+      case 'tiktok':
+        return `https://tiktok.com/@${cleanHandle}`;
+      case 'facebook':
+        return `https://facebook.com/${cleanHandle}`;
+      case 'pinterest':
+        return `https://pinterest.com/${cleanHandle}`;
+      case 'x':
+        return `https://x.com/${cleanHandle}`;
+      default:
+        return url || `https://${cleanHandle}`;
     }
   };
 
@@ -158,26 +213,38 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {creator.creator_socials.map((social, index) => (
-                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                    <div className="flex items-center gap-3">
-                      {getPlatformIcon(social.platform)}
-                      <div>
-                        <p className="font-medium capitalize">{social.platform}</p>
-                        {social.followers && (
+                {creator.creator_socials.map((social, index) => {
+                  const socialUrl = getSocialMediaUrl(social.platform, social.handle || '', social.url);
+                  
+                  return (
+                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
+                      <div className="flex items-center gap-3">
+                        {getPlatformIcon(social.platform)}
+                        <div>
+                          <p className="font-medium">{getPlatformName(social.platform)}</p>
                           <p className="text-sm text-muted-foreground">
-                            {social.followers.toLocaleString()} followers
+                            @{social.handle || social.url?.split('/').pop() || 'profile'}
                           </p>
-                        )}
+                          {social.followers && (
+                            <p className="text-xs text-muted-foreground">
+                              {social.followers.toLocaleString()} followers
+                            </p>
+                          )}
+                        </div>
                       </div>
+                      <Button variant="ghost" size="sm" asChild>
+                        <a 
+                          href={socialUrl} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="hover:scale-105 transition-transform"
+                        >
+                          <ExternalLink className="h-4 w-4" />
+                        </a>
+                      </Button>
                     </div>
-                    <Button variant="ghost" size="sm" asChild>
-                      <a href={social.url} target="_blank" rel="noopener noreferrer">
-                        <ExternalLink className="h-4 w-4" />
-                      </a>
-                    </Button>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>
