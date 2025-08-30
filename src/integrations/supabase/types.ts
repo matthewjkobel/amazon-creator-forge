@@ -294,6 +294,7 @@ export type Database = {
           engagement_rate: number | null
           featured_video_url: string | null
           headline: string | null
+          headshot_url: string | null
           id: string
           is_featured: boolean | null
           location: string | null
@@ -317,6 +318,7 @@ export type Database = {
           engagement_rate?: number | null
           featured_video_url?: string | null
           headline?: string | null
+          headshot_url?: string | null
           id?: string
           is_featured?: boolean | null
           location?: string | null
@@ -340,6 +342,7 @@ export type Database = {
           engagement_rate?: number | null
           featured_video_url?: string | null
           headline?: string | null
+          headshot_url?: string | null
           id?: string
           is_featured?: boolean | null
           location?: string | null

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,29 +21,56 @@ import * as z from "zod";
 import Header from "@/components/Header";
 
 const socialPlatforms = [
-  { name: "YouTube", value: "youtube", icon: Youtube, placeholder: "https://youtube.com/@yourhandle" },
-  { name: "Instagram", value: "instagram", icon: Instagram, placeholder: "https://instagram.com/yourhandle" },
-  { name: "TikTok", value: "tiktok", icon: Video, placeholder: "https://tiktok.com/@yourhandle" },
-  { name: "Facebook", value: "facebook", icon: ExternalLink, placeholder: "https://facebook.com/yourpage" },
-  { name: "Pinterest", value: "pinterest", icon: ExternalLink, placeholder: "https://pinterest.com/yourhandle" },
-  { name: "X (Twitter)", value: "x", icon: ExternalLink, placeholder: "https://x.com/yourhandle" }
+  { name: "YouTube", value: "youtube", icon: Youtube, placeholder: "yourhandle" },
+  { name: "Instagram", value: "instagram", icon: Instagram, placeholder: "yourhandle" },
+  { name: "TikTok", value: "tiktok", icon: Video, placeholder: "yourhandle" },
+  { name: "Facebook", value: "facebook", icon: ExternalLink, placeholder: "yourpage" },
+  { name: "Pinterest", value: "pinterest", icon: ExternalLink, placeholder: "yourhandle" },
+  { name: "X (Twitter)", value: "x", icon: ExternalLink, placeholder: "yourhandle" }
 ];
 
 const niches = [
   "Beauty", "Fashion", "Fitness", "Food", "Home", "Outdoors", "Parenting", "Pets", "Tech", "Travel"
 ];
 
+// Custom URL validation that's more flexible
+const flexibleUrlSchema = z.string().optional().refine((val) => {
+  if (!val || val.trim() === "") return true;
+  
+  // Basic URL pattern check - allow URLs with or without protocol
+  const urlPattern = /^(https?:\/\/)?([\w\-]+(\.[\w\-]+)+)(\/.*)?$/;
+  const simplePattern = /^[\w\-]+(\.[\w\-]+)+/; // For basic domain.com format
+  
+  return urlPattern.test(val) || simplePattern.test(val);
+}, "Please enter a valid website URL");
+
+// Headshot file validation - flexible but with size limits
+const headshotSchema = z.any().optional().refine((file) => {
+  if (!file) return true;
+  
+  // Check if it's a file
+  if (!(file instanceof File)) return true;
+  
+  // Check file size (max 10MB)
+  if (file.size > 10 * 1024 * 1024) return false;
+  
+  // Check file type
+  if (!file.type.startsWith('image/')) return false;
+  
+  return true;
+}, "Please upload an image file under 10MB");
+
 const profileSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
   location: z.string().min(1, "Location is required"),
   bio: z.string().min(10, "About me must be at least 10 characters").max(1000, "About me must be 1000 characters or less"),
-  storefrontUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
-  featuredVideoUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
+  storefrontUrl: flexibleUrlSchema,
+  featuredVideoUrl: flexibleUrlSchema,
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
   selectedNiches: z.array(z.string()).min(1, "Please select at least one niche"),
-  socials: z.record(z.string()),
-  headshotFile: z.any().optional()
+  socials: z.record(z.string().optional()),
+  headshotFile: headshotSchema
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -55,6 +82,7 @@ const CreatorProfile = () => {
   const [loading, setLoading] = useState(false);
   const [isExistingCreator, setIsExistingCreator] = useState(false);
   const [creatorData, setCreatorData] = useState<any>(null);
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -102,10 +130,31 @@ const CreatorProfile = () => {
           setIsExistingCreator(true);
           setCreatorData(creator);
           
-          // Populate form with existing data
+          // Populate form with existing data - extract handles from URLs
           const socialsData: Record<string, string> = {};
           creator.creator_socials?.forEach((social: any) => {
-            socialsData[social.platform] = social.url || "";
+            // Extract handle from URL if possible, otherwise use the whole URL
+            let handle = social.handle || social.url || "";
+            if (!social.handle && social.url) {
+              // Try to extract handle from URL
+              const url = social.url;
+              if (url.includes('youtube.com/@')) {
+                handle = url.split('@')[1];
+              } else if (url.includes('instagram.com/')) {
+                handle = url.split('instagram.com/')[1]?.split('/')[0] || '';
+              } else if (url.includes('tiktok.com/@')) {
+                handle = url.split('@')[1];
+              } else if (url.includes('facebook.com/')) {
+                handle = url.split('facebook.com/')[1]?.split('/')[0] || '';
+              } else if (url.includes('pinterest.com/')) {
+                handle = url.split('pinterest.com/')[1]?.split('/')[0] || '';
+              } else if (url.includes('x.com/')) {
+                handle = url.split('x.com/')[1]?.split('/')[0] || '';
+              } else {
+                handle = url;
+              }
+            }
+            socialsData[social.platform] = handle;
           });
 
           const selectedNiches = creator.creator_niches?.map((cn: any) => 
@@ -131,6 +180,50 @@ const CreatorProfile = () => {
 
     loadCreatorProfile();
   }, [user, form]);
+
+  // Auto-save to database every 30 seconds
+  const autoSaveToDatabase = useCallback(async (formData: ProfileFormData) => {
+    if (!user || !autoSaveEnabled) return;
+
+    try {
+      const updateData: any = {
+        user_id: user.id,
+        display_name: formData.displayName,
+        location: formData.location,
+        bio: formData.bio,
+        storefront_url: formData.storefrontUrl,
+        featured_video_url: formData.featuredVideoUrl,
+        price_min: formData.priceMin ? parseInt(formData.priceMin) : null,
+        price_max: formData.priceMax ? parseInt(formData.priceMax) : null
+      };
+
+      await supabase
+        .from("creators")
+        .upsert(updateData);
+
+      console.log("Auto-saved profile data");
+    } catch (error) {
+      console.warn("Auto-save failed:", error);
+    }
+  }, [user, autoSaveEnabled]);
+
+  // Auto-save effect
+  useEffect(() => {
+    const subscription = form.watch((data) => {
+      if (!user || !autoSaveEnabled) return;
+      
+      // Only auto-save if we have minimum required fields
+      if (data.displayName && data.location && data.bio && data.bio.length >= 10) {
+        const timeoutId = setTimeout(() => {
+          autoSaveToDatabase(data as ProfileFormData);
+        }, 3000); // Save 3 seconds after user stops typing
+
+        return () => clearTimeout(timeoutId);
+      }
+    });
+
+    return () => subscription.unsubscribe();
+  }, [form, autoSaveToDatabase, user, autoSaveEnabled]);
 
   const uploadHeadshot = async (file: File, userId: string) => {
     const fileExt = file.name.split('.').pop();
@@ -221,14 +314,46 @@ const CreatorProfile = () => {
           .delete()
           .eq("creator_id", creator.id);
 
-        // Insert new socials
+        // Convert handles to full URLs and insert new socials
         const socialInserts = Object.entries(data.socials)
-          .filter(([_, url]) => url.trim())
-          .map(([platform, url]) => ({
-            creator_id: creator.id,
-            platform,
-            url: url.trim()
-          }));
+          .filter(([_, handle]) => handle && handle.trim())
+          .map(([platform, handle]) => {
+            const cleanHandle = handle.trim();
+            let fullUrl = cleanHandle;
+            
+            // Convert handle to full URL based on platform
+            if (!cleanHandle.startsWith('http')) {
+              switch (platform) {
+                case 'youtube':
+                  fullUrl = `https://youtube.com/@${cleanHandle}`;
+                  break;
+                case 'instagram':
+                  fullUrl = `https://instagram.com/${cleanHandle}`;
+                  break;
+                case 'tiktok':
+                  fullUrl = `https://tiktok.com/@${cleanHandle}`;
+                  break;
+                case 'facebook':
+                  fullUrl = `https://facebook.com/${cleanHandle}`;
+                  break;
+                case 'pinterest':
+                  fullUrl = `https://pinterest.com/${cleanHandle}`;
+                  break;
+                case 'x':
+                  fullUrl = `https://x.com/${cleanHandle}`;
+                  break;
+                default:
+                  fullUrl = cleanHandle;
+              }
+            }
+            
+            return {
+              creator_id: creator.id,
+              platform,
+              url: fullUrl,
+              handle: cleanHandle
+            };
+          });
 
         if (socialInserts.length > 0) {
           await supabase
@@ -360,6 +485,12 @@ const CreatorProfile = () => {
                 : "Tell brands about yourself and showcase what makes you special."
               }
             </p>
+            {autoSaveEnabled && (
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Check className="h-3 w-3" />
+                Auto-save enabled - your changes are saved automatically
+              </div>
+            )}
           </div>
         </div>
 
@@ -404,27 +535,30 @@ const CreatorProfile = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="headshotFile"
-                  render={({ field: { onChange, value, ...field } }) => (
-                    <FormItem>
-                      <FormLabel>Profile Photo</FormLabel>
-                      <FormControl>
-                        <Input
-                          type="file"
-                          accept="image/*"
-                          onChange={(e) => {
-                            const file = e.target.files?.[0];
-                            onChange(file);
-                          }}
-                          {...field}
-                        />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                 <FormField
+                   control={form.control}
+                   name="headshotFile"
+                   render={({ field: { onChange, value, ...field } }) => (
+                     <FormItem>
+                       <FormLabel>Profile Photo</FormLabel>
+                       <FormControl>
+                         <Input
+                           type="file"
+                           accept="image/*"
+                           onChange={(e) => {
+                             const file = e.target.files?.[0];
+                             onChange(file);
+                           }}
+                           {...field}
+                         />
+                       </FormControl>
+                       <div className="text-sm text-muted-foreground">
+                         Upload an image file (max 10MB). Supports JPG, PNG, GIF, etc.
+                       </div>
+                       <FormMessage />
+                     </FormItem>
+                   )}
+                 />
 
                 <FormField
                   control={form.control}
@@ -585,7 +719,10 @@ const CreatorProfile = () => {
 
             <Card>
               <CardHeader>
-                <CardTitle>Social Media Links</CardTitle>
+                <CardTitle>Social Media Handles (Optional)</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Enter your handle/username only - we'll create the full links automatically
+                </p>
               </CardHeader>
               <CardContent className="space-y-4">
                 {socialPlatforms.map((platform) => (
