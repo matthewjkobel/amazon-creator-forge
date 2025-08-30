@@ -478,9 +478,20 @@ const CreatorProfile = () => {
     } catch (error) {
       console.error("Error saving profile:", error);
       console.log("Full error details:", JSON.stringify(error, null, 2));
+      
+      // Check if it's a specific database error
+      if (error?.message) {
+        console.log("Error message:", error.message);
+      }
+      
+      // Check if it's a Supabase error
+      if (error?.code) {
+        console.log("Supabase error code:", error.code);
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save profile. Please try again.",
+        description: `Failed to save profile: ${error?.message || 'Unknown error'}. Please try again.`,
         variant: "destructive"
       });
     } finally {
