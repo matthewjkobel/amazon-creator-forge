@@ -13,6 +13,7 @@ interface CreatorProfileViewProps {
     bio?: string;
     location?: string;
     avatar_url?: string;
+    headshot_url?: string;
     storefront_url?: string;
     featured_video_url?: string;
     price_min?: number;
@@ -66,7 +67,7 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-6">
             <Avatar className="h-24 w-24 mx-auto sm:mx-0">
-              <AvatarImage src={creator.avatar_url} alt={creator.display_name} />
+              <AvatarImage src={creator.headshot_url || creator.avatar_url} alt={creator.display_name} />
               <AvatarFallback className="text-lg">
                 {getInitials(creator.display_name)}
               </AvatarFallback>
@@ -101,109 +102,116 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* About */}
-        <Card>
-          <CardHeader>
-            <CardTitle>About</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-muted-foreground">
-              {creator.bio || "No bio available"}
-            </p>
-          </CardContent>
-        </Card>
+        {creator.bio && (
+          <Card>
+            <CardHeader>
+              <CardTitle>About</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-muted-foreground">
+                {creator.bio}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Pricing */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Pricing
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-lg font-semibold">
-              {formatPrice(creator.price_min, creator.price_max)}
-            </p>
-          </CardContent>
-        </Card>
+        {(creator.price_min || creator.price_max) && (
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <DollarSign className="h-5 w-5" />
+                Pricing
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-lg font-semibold">
+                {formatPrice(creator.price_min, creator.price_max)}
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Niches */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Niches</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap gap-2">
-              {creator.creator_niches?.map((niche, index) => (
-                <Badge key={index} variant="secondary">
-                  {niche.niches.name}
-                </Badge>
-              )) || <p className="text-muted-foreground">No niches specified</p>}
-            </div>
-          </CardContent>
-        </Card>
+        {creator.creator_niches && creator.creator_niches.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Niches</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap gap-2">
+                {creator.creator_niches?.map((niche, index) => (
+                  <Badge key={index} variant="secondary">
+                    {niche.niches.name}
+                  </Badge>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Social Media */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Social Media Presence</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              {creator.creator_socials?.map((social, index) => (
-                <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getPlatformIcon(social.platform)}
-                    <div>
-                      <p className="font-medium capitalize">{social.platform}</p>
-                      {social.followers && (
-                        <p className="text-sm text-muted-foreground">
-                          {social.followers.toLocaleString()} followers
-                        </p>
-                      )}
+        {creator.creator_socials && creator.creator_socials.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Social Media Presence</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                {creator.creator_socials.map((social, index) => (
+                  <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-3">
+                      {getPlatformIcon(social.platform)}
+                      <div>
+                        <p className="font-medium capitalize">{social.platform}</p>
+                        {social.followers && (
+                          <p className="text-sm text-muted-foreground">
+                            {social.followers.toLocaleString()} followers
+                          </p>
+                        )}
+                      </div>
                     </div>
+                    <Button variant="ghost" size="sm" asChild>
+                      <a href={social.url} target="_blank" rel="noopener noreferrer">
+                        <ExternalLink className="h-4 w-4" />
+                      </a>
+                    </Button>
                   </div>
-                  <Button variant="ghost" size="sm" asChild>
-                    <a href={social.url} target="_blank" rel="noopener noreferrer">
-                      <ExternalLink className="h-4 w-4" />
-                    </a>
-                  </Button>
-                </div>
-              )) || <p className="text-muted-foreground">No social media links</p>}
-            </div>
-          </CardContent>
-        </Card>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
       </div>
 
       {/* Links */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Links</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-3">
-            {creator.storefront_url && (
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href={creator.storefront_url} target="_blank" rel="noopener noreferrer">
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Amazon Storefront
-                </a>
-              </Button>
-            )}
-            {creator.featured_video_url && (
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a href={creator.featured_video_url} target="_blank" rel="noopener noreferrer">
-                  <Video className="h-4 w-4 mr-2" />
-                  Featured Content
-                </a>
-              </Button>
-            )}
-            {!creator.storefront_url && !creator.featured_video_url && (
-              <p className="text-muted-foreground">No links available</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+      {(creator.storefront_url || creator.featured_video_url) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Links</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {creator.storefront_url && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href={creator.storefront_url} target="_blank" rel="noopener noreferrer">
+                    <ExternalLink className="h-4 w-4 mr-2" />
+                    Amazon Storefront
+                  </a>
+                </Button>
+              )}
+              {creator.featured_video_url && (
+                <Button variant="outline" className="w-full justify-start" asChild>
+                  <a href={creator.featured_video_url} target="_blank" rel="noopener noreferrer">
+                    <Video className="h-4 w-4 mr-2" />
+                    Featured Content
+                  </a>
+                </Button>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

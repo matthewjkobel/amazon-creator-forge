@@ -35,14 +35,15 @@ const niches = [
 
 const profileSchema = z.object({
   displayName: z.string().min(2, "Name must be at least 2 characters"),
-  location: z.string().optional(),
+  location: z.string().min(1, "Location is required"),
   bio: z.string().min(10, "About me must be at least 10 characters").max(1000, "About me must be 1000 characters or less"),
   storefrontUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   featuredVideoUrl: z.string().url("Please enter a valid URL").optional().or(z.literal("")),
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
   selectedNiches: z.array(z.string()).min(1, "Please select at least one niche"),
-  socials: z.record(z.string())
+  socials: z.record(z.string()),
+  headshotFile: z.any().optional()
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -66,7 +67,8 @@ const CreatorProfile = () => {
       priceMin: "",
       priceMax: "",
       selectedNiches: [],
-      socials: {}
+      socials: {},
+      headshotFile: undefined
     }
   });
 
@@ -130,24 +132,56 @@ const CreatorProfile = () => {
     loadCreatorProfile();
   }, [user, form]);
 
+  const uploadHeadshot = async (file: File, userId: string) => {
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${userId}/headshot.${fileExt}`;
+    
+    const { data, error } = await supabase.storage
+      .from('creator-headshots')
+      .upload(fileName, file, { 
+        upsert: true 
+      });
+
+    if (error) throw error;
+    
+    const { data: { publicUrl } } = supabase.storage
+      .from('creator-headshots')
+      .getPublicUrl(fileName);
+      
+    return publicUrl;
+  };
+
   const onSubmit = async (data: ProfileFormData) => {
     if (!user) return;
 
     setLoading(true);
     try {
+      let headshotUrl = null;
+      
+      // Upload headshot if provided
+      if (data.headshotFile) {
+        headshotUrl = await uploadHeadshot(data.headshotFile, user.id);
+      }
+
       // Upsert creator profile
+      const updateData: any = {
+        user_id: user.id,
+        display_name: data.displayName,
+        location: data.location,
+        bio: data.bio,
+        storefront_url: data.storefrontUrl,
+        featured_video_url: data.featuredVideoUrl,
+        price_min: data.priceMin ? parseInt(data.priceMin) : null,
+        price_max: data.priceMax ? parseInt(data.priceMax) : null
+      };
+
+      if (headshotUrl) {
+        updateData.headshot_url = headshotUrl;
+      }
+
       const { data: creator, error: creatorError } = await supabase
         .from("creators")
-        .upsert({
-          user_id: user.id,
-          display_name: data.displayName,
-          location: data.location,
-          bio: data.bio,
-          storefront_url: data.storefrontUrl,
-          featured_video_url: data.featuredVideoUrl,
-          price_min: data.priceMin ? parseInt(data.priceMin) : null,
-          price_max: data.priceMax ? parseInt(data.priceMax) : null
-        })
+        .upsert(updateData)
         .select()
         .single();
 
@@ -360,10 +394,32 @@ const CreatorProfile = () => {
                     <FormItem>
                       <FormLabel className="flex items-center gap-2">
                         <MapPin className="h-4 w-4" />
-                        Location
+                        Location *
                       </FormLabel>
                       <FormControl>
                         <Input placeholder="City, State/Country" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
+                  name="headshotFile"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Profile Photo</FormLabel>
+                      <FormControl>
+                        <Input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            onChange(file);
+                          }}
+                          {...field}
+                        />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
