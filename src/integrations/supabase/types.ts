@@ -75,7 +75,11 @@ export type Database = {
       }
       brands: {
         Row: {
+          about: string | null
+          amazon_storefront_url: string | null
           company_name: string
+          contact_email: string | null
+          contact_name: string | null
           created_at: string | null
           id: string
           logo_url: string | null
@@ -84,7 +88,11 @@ export type Database = {
           website_url: string | null
         }
         Insert: {
+          about?: string | null
+          amazon_storefront_url?: string | null
           company_name: string
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string | null
           id?: string
           logo_url?: string | null
@@ -93,7 +101,11 @@ export type Database = {
           website_url?: string | null
         }
         Update: {
+          about?: string | null
+          amazon_storefront_url?: string | null
           company_name?: string
+          contact_email?: string | null
+          contact_name?: string | null
           created_at?: string | null
           id?: string
           logo_url?: string | null
