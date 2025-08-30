@@ -211,6 +211,7 @@ const CreatorProfile = () => {
       navigate("/creator-dashboard");
     } catch (error) {
       console.error("Error saving profile:", error);
+      console.log("Full error details:", JSON.stringify(error, null, 2));
       toast({
         title: "Error",
         description: "Failed to save profile. Please try again.",
