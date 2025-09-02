@@ -39,8 +39,6 @@ interface CreatorProfileViewProps {
 }
 
 const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProfileViewProps) => {
-  // Debug logging
-  console.log('Creator socials data:', creator.creator_socials);
   const getInitials = (name: string) => {
     return name
       .split(" ")
