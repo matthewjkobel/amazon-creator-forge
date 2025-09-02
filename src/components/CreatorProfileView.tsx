@@ -67,7 +67,6 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         return <ExternalLink className="h-4 w-4 text-blue-600" />;
       case 'pinterest':
         return <ExternalLink className="h-4 w-4 text-red-600" />;
-      case 'twitter':
       case 'x':
         return <ExternalLink className="h-4 w-4 text-black" />;
       default:
@@ -87,7 +86,6 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         return 'Facebook';
       case 'pinterest':
         return 'Pinterest';
-      case 'twitter':
       case 'x':
         return 'X (Twitter)';
       default:
@@ -115,7 +113,6 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         return `https://facebook.com/${cleanHandle}`;
       case 'pinterest':
         return `https://pinterest.com/${cleanHandle}`;
-      case 'twitter':
       case 'x':
         return `https://x.com/${cleanHandle}`;
       default:
