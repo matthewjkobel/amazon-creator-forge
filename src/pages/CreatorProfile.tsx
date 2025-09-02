@@ -27,7 +27,7 @@ const socialPlatforms = [
   { name: "TikTok", value: "tiktok", icon: Video, placeholder: "yourhandle" },
   { name: "Facebook", value: "facebook", icon: ExternalLink, placeholder: "yourpage" },
   { name: "Pinterest", value: "pinterest", icon: ExternalLink, placeholder: "yourhandle" },
-  { name: "X (Twitter)", value: "x", icon: ExternalLink, placeholder: "yourhandle" }
+  { name: "X (Twitter)", value: "twitter", icon: ExternalLink, placeholder: "yourhandle" }
 ];
 
 const niches = [
@@ -293,7 +293,7 @@ const CreatorProfile = () => {
                 case 'pinterest':
                   fullUrl = `https://pinterest.com/${cleanHandle}`;
                   break;
-                case 'x':
+                case 'twitter':
                   fullUrl = `https://x.com/${cleanHandle}`;
                   break;
                 default:
@@ -472,7 +472,7 @@ const CreatorProfile = () => {
                   case 'pinterest':
                     fullUrl = `https://pinterest.com/${cleanHandle}`;
                     break;
-                  case 'x':
+                  case 'twitter':
                     fullUrl = `https://x.com/${cleanHandle}`;
                     break;
                   default:

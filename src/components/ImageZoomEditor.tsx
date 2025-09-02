@@ -41,6 +41,7 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel }: ImageZoomEditorProps) 
   const handleMouseMove = useCallback((e: React.MouseEvent) => {
     if (!isDragging) return;
     
+    e.preventDefault();
     setPosition({
       x: e.clientX - dragStart.x,
       y: e.clientY - dragStart.y
