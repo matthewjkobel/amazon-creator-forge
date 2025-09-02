@@ -292,6 +292,11 @@ export type Database = {
           created_at: string | null
           display_name: string
           engagement_rate: number | null
+          featured_content_desc_1: string | null
+          featured_content_desc_2: string | null
+          featured_content_desc_3: string | null
+          featured_content_url_2: string | null
+          featured_content_url_3: string | null
           featured_video_url: string | null
           headline: string | null
           headshot_url: string | null
@@ -316,6 +321,11 @@ export type Database = {
           created_at?: string | null
           display_name: string
           engagement_rate?: number | null
+          featured_content_desc_1?: string | null
+          featured_content_desc_2?: string | null
+          featured_content_desc_3?: string | null
+          featured_content_url_2?: string | null
+          featured_content_url_3?: string | null
           featured_video_url?: string | null
           headline?: string | null
           headshot_url?: string | null
@@ -340,6 +350,11 @@ export type Database = {
           created_at?: string | null
           display_name?: string
           engagement_rate?: number | null
+          featured_content_desc_1?: string | null
+          featured_content_desc_2?: string | null
+          featured_content_desc_3?: string | null
+          featured_content_url_2?: string | null
+          featured_content_url_3?: string | null
           featured_video_url?: string | null
           headline?: string | null
           headshot_url?: string | null
