@@ -89,6 +89,21 @@ const Auth = () => {
       if (error) {
         setError(error.message);
       } else {
+        // Sync new user to ConvertKit on signup
+        try {
+          await supabase.functions.invoke('sync-convertkit', {
+            body: {
+              user_id: email, // Use email as temp ID since user not created yet
+              email: email,
+              full_name: fullName,
+              approval_status: 'draft'
+            }
+          });
+        } catch (convertKitError) {
+          console.warn("ConvertKit sync failed on signup:", convertKitError);
+          // Don't block signup flow if ConvertKit fails
+        }
+
         toast({
           title: "Check your email!",
           description: "We've sent you a confirmation link to complete your registration.",

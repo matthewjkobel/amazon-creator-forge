@@ -41,6 +41,22 @@ const RoleSelection = () => {
         return;
       }
 
+      // Sync to ConvertKit
+      try {
+        await supabase.functions.invoke('sync-convertkit', {
+          body: {
+            user_id: user.id,
+            email: user.email,
+            full_name: user.user_metadata?.full_name,
+            role: selectedRole,
+            approval_status: 'draft'
+          }
+        });
+      } catch (convertKitError) {
+        console.warn("ConvertKit sync failed:", convertKitError);
+        // Don't block user flow if ConvertKit fails
+      }
+
       if (selectedRole === "creator") {
         // Create creator profile
         const { error } = await supabase
