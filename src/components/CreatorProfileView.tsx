@@ -231,22 +231,22 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
               <CardTitle>Social Media Links</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-2">
                 {creator.creator_socials.map((social, index) => {
                   const socialUrl = getSocialMediaUrl(social.platform, social.handle || '', social.url);
                   
                   return (
-                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-md hover:bg-muted/80 transition-colors">
-                      <div className="flex items-center gap-1.5 min-w-0">
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
+                      <div className="flex items-center gap-2">
                         {getPlatformIcon(social.platform)}
-                        <div className="min-w-0 flex-1">
-                          <p className="text-xs font-medium truncate">{getPlatformName(social.platform)}</p>
-                          <p className="text-xs text-muted-foreground truncate">
+                        <div>
+                          <p className="text-sm font-medium">{getPlatformName(social.platform)}</p>
+                          <p className="text-xs text-muted-foreground">
                             @{social.handle || social.url?.split('/').pop() || 'profile'}
                           </p>
                         </div>
                       </div>
-                      <Button variant="ghost" size="sm" className="h-6 w-6 p-0" asChild>
+                      <Button variant="ghost" size="sm" asChild>
                         <a 
                           href={socialUrl} 
                           target="_blank" 
