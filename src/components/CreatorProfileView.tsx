@@ -129,22 +129,22 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
       <Card>
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row gap-6">
-            <Avatar className="h-32 w-32 mx-auto sm:mx-0">
+            <Avatar className="h-48 w-48 mx-auto sm:mx-0">
               <AvatarImage src={creator.headshot_url || creator.avatar_url} alt={creator.display_name} />
-              <AvatarFallback className="text-xl">
+              <AvatarFallback className="text-2xl">
                 {getInitials(creator.display_name)}
               </AvatarFallback>
             </Avatar>
             
             <div className="flex-1 text-center sm:text-left">
-              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4 mb-4">
                 <div>
-                  <h1 className="text-2xl font-bold">{creator.display_name}</h1>
+                  <h1 className="text-3xl font-bold">{creator.display_name}</h1>
                   {creator.headline && (
-                    <p className="text-muted-foreground mt-1">{creator.headline}</p>
+                    <p className="text-lg text-muted-foreground mt-2">{creator.headline}</p>
                   )}
                   {creator.location && (
-                    <div className="flex items-center justify-center sm:justify-start gap-1 mt-2 text-sm text-muted-foreground">
+                    <div className="flex items-center justify-center sm:justify-start gap-1 mt-3 text-sm text-muted-foreground">
                       <MapPin className="h-4 w-4" />
                       {creator.location}
                     </div>
@@ -158,60 +158,58 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
                   </Button>
                 )}
               </div>
+              
+              {/* About Me section moved to top */}
+              {creator.bio && (
+                <div className="mt-4">
+                  <h3 className="text-lg font-semibold mb-2">About Me</h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {creator.bio}
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* About */}
-        {creator.bio && (
+        {/* Niches & Pricing Combined */}
+        {(creator.creator_niches && creator.creator_niches.length > 0) || (creator.price_min || creator.price_max) ? (
           <Card>
             <CardHeader>
-              <CardTitle>About</CardTitle>
+              <CardTitle>Niches & Pricing</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-muted-foreground">
-                {creator.bio}
-              </p>
+            <CardContent className="space-y-6">
+              {/* Niches */}
+              {creator.creator_niches && creator.creator_niches.length > 0 && (
+                <div>
+                  <h4 className="font-medium mb-3">Content Niches</h4>
+                  <div className="flex flex-wrap gap-2">
+                    {creator.creator_niches?.map((niche, index) => (
+                      <Badge key={index} variant="secondary">
+                        {niche.niches.name}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+              )}
+              
+              {/* Pricing */}
+              {(creator.price_min || creator.price_max) && (
+                <div>
+                  <h4 className="font-medium mb-3 flex items-center gap-2">
+                    <DollarSign className="h-4 w-4" />
+                    Collaboration Pricing
+                  </h4>
+                  <p className="text-lg font-semibold text-primary">
+                    {formatPrice(creator.price_min, creator.price_max)}
+                  </p>
+                </div>
+              )}
             </CardContent>
           </Card>
-        )}
-
-        {/* Pricing */}
-        {(creator.price_min || creator.price_max) && (
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <DollarSign className="h-5 w-5" />
-                Pricing
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-lg font-semibold">
-                {formatPrice(creator.price_min, creator.price_max)}
-              </p>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Niches */}
-        {creator.creator_niches && creator.creator_niches.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Niches</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-wrap gap-2">
-                {creator.creator_niches?.map((niche, index) => (
-                  <Badge key={index} variant="secondary">
-                    {niche.niches.name}
-                  </Badge>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+        ) : null}
 
         {/* Social Media */}
         {creator.creator_socials && creator.creator_socials.length > 0 && (
