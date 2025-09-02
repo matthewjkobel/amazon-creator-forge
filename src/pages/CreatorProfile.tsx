@@ -170,7 +170,8 @@ const CreatorProfile = () => {
                 handle = url;
               }
             }
-            socialsData[social.platform] = handle;
+            const platformKey = social.platform === 'x' ? 'twitter' : social.platform;
+            socialsData[platformKey] = handle;
           });
 
           const selectedNiches = creator.creator_niches?.map((cn: any) => 
@@ -273,11 +274,12 @@ const CreatorProfile = () => {
           .filter(([_, handle]) => handle && handle.trim())
           .map(([platform, handle]) => {
             const cleanHandle = handle.trim();
+            const normalizedPlatform = platform === 'x' ? 'twitter' : platform;
             let fullUrl = cleanHandle;
             
             // Convert handle to full URL based on platform
             if (!cleanHandle.startsWith('http')) {
-              switch (platform) {
+              switch (normalizedPlatform) {
                 case 'youtube':
                   fullUrl = `https://youtube.com/@${cleanHandle}`;
                   break;
@@ -303,7 +305,7 @@ const CreatorProfile = () => {
             
             return {
               creator_id: creator.id,
-              platform,
+              platform: normalizedPlatform,
               url: fullUrl,
               handle: cleanHandle
             };
@@ -452,11 +454,12 @@ const CreatorProfile = () => {
             .filter(([_, handle]) => handle && handle.trim())
             .map(([platform, handle]) => {
               const cleanHandle = handle.trim();
+              const normalizedPlatform = platform === 'x' ? 'twitter' : platform;
               let fullUrl = cleanHandle;
               
               // Convert handle to full URL based on platform
               if (!cleanHandle.startsWith('http')) {
-                switch (platform) {
+                switch (normalizedPlatform) {
                   case 'youtube':
                     fullUrl = `https://youtube.com/@${cleanHandle}`;
                     break;
@@ -482,7 +485,7 @@ const CreatorProfile = () => {
               
               return {
                 creator_id: creator.id,
-                platform,
+              platform: normalizedPlatform,
                 url: fullUrl,
                 handle: cleanHandle
               };
