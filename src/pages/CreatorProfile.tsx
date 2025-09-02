@@ -235,13 +235,7 @@ const CreatorProfile = () => {
 
       // Auto-save niches if they exist
       if (creator && formData.selectedNiches?.length > 0) {
-        // Delete existing niches
-        await supabase
-          .from("creator_niches")
-          .delete()
-          .eq("creator_id", creator.id);
-
-        // Insert new niches
+        // Get niche IDs for the selected niche names
         const { data: nicheData } = await supabase
           .from("niches")
           .select("id, name")
@@ -253,9 +247,13 @@ const CreatorProfile = () => {
             niche_id: niche.id
           }));
 
+          // Use upsert to avoid duplicate key errors
           await supabase
             .from("creator_niches")
-            .insert(nicheInserts);
+            .upsert(nicheInserts, { 
+              onConflict: 'creator_id,niche_id',
+              ignoreDuplicates: false 
+            });
         }
       }
 
@@ -414,13 +412,7 @@ const CreatorProfile = () => {
 
       // Handle niches
       if (creator) {
-        // Delete existing niches
-        await supabase
-          .from("creator_niches")
-          .delete()
-          .eq("creator_id", creator.id);
-
-        // Insert new niches
+        // Handle niches
         if (data.selectedNiches.length > 0) {
           const { data: nicheData } = await supabase
             .from("niches")
@@ -433,10 +425,20 @@ const CreatorProfile = () => {
               niche_id: niche.id
             }));
 
+            // Use upsert to avoid duplicate key errors
             await supabase
               .from("creator_niches")
-              .insert(nicheInserts);
+              .upsert(nicheInserts, { 
+                onConflict: 'creator_id,niche_id',
+                ignoreDuplicates: false 
+              });
           }
+        } else {
+          // If no niches selected, delete existing ones
+          await supabase
+            .from("creator_niches")
+            .delete()
+            .eq("creator_id", creator.id);
         }
 
         // Handle social handles
