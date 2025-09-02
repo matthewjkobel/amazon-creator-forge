@@ -217,7 +217,7 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         {creator.creator_socials && creator.creator_socials.length > 0 && (
           <Card>
             <CardHeader>
-              <CardTitle>Social Media Presence</CardTitle>
+              <CardTitle>Social Media Links</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
