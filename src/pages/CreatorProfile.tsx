@@ -32,7 +32,7 @@ const socialPlatforms = [
 ];
 
 const niches = [
-  "Beauty", "Fashion", "Fitness", "Food", "Home", "Outdoors", "Parenting", "Pets", "Tech", "Travel"
+  "Beauty", "Fashion", "Fitness", "Food", "Home", "Outdoors", "Parenting", "Pets", "Tech", "Travel", "Other"
 ];
 
 // Custom URL validation that's more flexible
@@ -76,8 +76,18 @@ const profileSchema = z.object({
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
   selectedNiches: z.array(z.string()).min(1, "Please select at least one niche"),
+  customNiche: z.string().optional(),
   socials: z.record(z.string().optional()),
   headshotFile: headshotSchema
+}).refine((data) => {
+  // If "Other" is selected, customNiche must be provided
+  if (data.selectedNiches.includes("Other")) {
+    return data.customNiche && data.customNiche.trim().length > 0;
+  }
+  return true;
+}, {
+  message: "Please specify your custom niche",
+  path: ["customNiche"]
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
@@ -114,6 +124,7 @@ const CreatorProfile = () => {
       priceMin: "",
       priceMax: "",
       selectedNiches: [],
+      customNiche: "",
       socials: {},
       headshotFile: undefined
     }
@@ -198,6 +209,7 @@ const CreatorProfile = () => {
             priceMin: creator.price_min?.toString() || "",
             priceMax: creator.price_max?.toString() || "",
             selectedNiches,
+            customNiche: "",
             socials: socialsData
           });
 
@@ -1087,6 +1099,26 @@ const CreatorProfile = () => {
                           />
                         ))}
                       </div>
+                      
+                      {/* Custom niche input that appears when "Other" is selected */}
+                      {form.watch("selectedNiches")?.includes("Other") && (
+                        <div className="mt-4">
+                          <FormField
+                            control={form.control}
+                            name="customNiche"
+                            render={({ field }) => (
+                              <FormItem>
+                                <FormLabel>Please specify your niche *</FormLabel>
+                                <FormControl>
+                                  <Input placeholder="Enter your custom niche" {...field} />
+                                </FormControl>
+                                <FormMessage />
+                              </FormItem>
+                            )}
+                          />
+                        </div>
+                      )}
+                      
                       <FormMessage />
                     </FormItem>
                   )}
