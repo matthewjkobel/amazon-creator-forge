@@ -167,6 +167,22 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
                   </p>
                 </div>
               )}
+              
+              {/* Amazon Storefront Link */}
+              {creator.storefront_url && (
+                <div className="mt-4">
+                  <Button variant="outline" className="w-full sm:w-auto" asChild>
+                    <a 
+                      href={creator.storefront_url.startsWith('http') ? creator.storefront_url : `https://${creator.storefront_url}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <ExternalLink className="h-4 w-4 mr-2" />
+                      Amazon Storefront
+                    </a>
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         </CardContent>
@@ -256,28 +272,6 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
         )}
       </div>
 
-      {/* Links */}
-      {creator.storefront_url && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Links</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a 
-                  href={creator.storefront_url.startsWith('http') ? creator.storefront_url : `https://${creator.storefront_url}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  Amazon Storefront
-                </a>
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* Featured Content */}
       {(creator.featured_video_url || creator.featured_content_url_2 || creator.featured_content_url_3) && (
