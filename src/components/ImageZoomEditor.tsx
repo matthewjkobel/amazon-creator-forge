@@ -67,21 +67,33 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel, initialZoom = 1, initial
     canvas.width = outputSize;
     canvas.height = outputSize;
 
-    // Calculate the source and destination dimensions for cropping
-    const sourceSize = Math.min(image.naturalWidth, image.naturalHeight);
-    const scaledSize = sourceSize * zoom;
+    // Fill with white background first (for transparent areas)
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, outputSize, outputSize);
+
+    // Calculate exact crop area based on preview positioning
+    // Preview shows 320px circle in 384px container, so crop area is center 320px
+    const previewSize = 384;
+    const cropSize = 320;
+    const cropOffset = (previewSize - cropSize) / 2; // 32px offset
     
-    // Calculate source coordinates (center crop)
-    const sourceX = (image.naturalWidth - sourceSize) / 2 - (position.x / zoom);
-    const sourceY = (image.naturalHeight - sourceSize) / 2 - (position.y / zoom);
+    // Calculate source dimensions and position
+    const scale = Math.min(image.naturalWidth / previewSize, image.naturalHeight / previewSize);
+    const scaledImageWidth = image.naturalWidth / scale;
+    const scaledImageHeight = image.naturalHeight / scale;
+    
+    // Calculate source coordinates for the crop circle
+    const sourceX = (scaledImageWidth - cropSize) / 2 - (position.x / zoom);
+    const sourceY = (scaledImageHeight - cropSize) / 2 - (position.y / zoom);
+    const sourceSize = cropSize / zoom;
 
     // Draw the cropped image
     ctx.drawImage(
       image,
-      sourceX,
-      sourceY,
-      sourceSize / zoom,
-      sourceSize / zoom,
+      sourceX * scale,
+      sourceY * scale,
+      sourceSize * scale,
+      sourceSize * scale,
       0,
       0,
       outputSize,
@@ -106,10 +118,10 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel, initialZoom = 1, initial
           </p>
         </div>
 
-        <div className="relative w-80 h-80 mx-auto">
-          {/* Full image preview container */}
+        <div className="relative w-96 h-96 mx-auto">
+          {/* Full image preview container - larger than crop circle */}
           <div 
-            className="relative w-full h-full bg-muted cursor-move overflow-hidden"
+            className="relative w-full h-full bg-muted cursor-move overflow-visible"
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -121,24 +133,28 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel, initialZoom = 1, initial
               alt="Profile preview"
               className="absolute max-w-none"
               style={{
-                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                transform: `scale(${zoom}) translate(${position.x}px, ${position.y}px)`,
                 transformOrigin: 'center',
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover'
+                width: '384px',
+                height: '384px',
+                objectFit: 'cover',
+                left: '50%',
+                top: '50%',
+                marginLeft: '-192px',
+                marginTop: '-192px'
               }}
               draggable={false}
             />
           </div>
-          {/* Circular crop overlay */}
-          <div className="absolute inset-0 pointer-events-none">
-            <div className="w-full h-full border-2 border-dashed border-primary rounded-full"></div>
+          {/* Circular crop overlay - centered in the larger preview area */}
+          <div className="absolute inset-8 pointer-events-none">
+            <div className="w-80 h-80 border-2 border-dashed border-primary rounded-full"></div>
           </div>
           {/* Dimmed overlay with circular cutout */}
           <div 
             className="absolute inset-0 pointer-events-none"
             style={{
-              background: `radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.4) 50%)`
+              background: `radial-gradient(circle 160px at center, transparent 160px, rgba(0,0,0,0.4) 160px)`
             }}
           ></div>
         </div>
