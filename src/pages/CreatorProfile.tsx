@@ -258,11 +258,32 @@ const CreatorProfile = () => {
 
       // Auto-save niches if they exist
       if (creator && formData.selectedNiches?.length > 0) {
+        let allNiches = [...formData.selectedNiches];
+        
+        // Handle custom niche if "Other" is selected
+        if (formData.selectedNiches.includes("Other") && formData.customNiche?.trim()) {
+          // Create custom niche if it doesn't exist
+          const { data: existingNiche } = await supabase
+            .from("niches")
+            .select("id, name")
+            .eq("name", formData.customNiche.trim())
+            .maybeSingle();
+            
+          if (!existingNiche) {
+            await supabase
+              .from("niches")
+              .insert({ name: formData.customNiche.trim() });
+          }
+          
+          // Replace "Other" with the custom niche name
+          allNiches = allNiches.filter(n => n !== "Other").concat(formData.customNiche.trim());
+        }
+        
         // Get niche IDs for the selected niche names
         const { data: nicheData } = await supabase
           .from("niches")
           .select("id, name")
-          .in("name", formData.selectedNiches);
+          .in("name", allNiches);
 
         if (nicheData) {
           const nicheInserts = nicheData.map(niche => ({
@@ -449,10 +470,31 @@ const CreatorProfile = () => {
       if (creator) {
         // Handle niches
         if (data.selectedNiches.length > 0) {
+          let allNiches = [...data.selectedNiches];
+          
+          // Handle custom niche if "Other" is selected
+          if (data.selectedNiches.includes("Other") && data.customNiche?.trim()) {
+            // Create custom niche if it doesn't exist
+            const { data: existingNiche } = await supabase
+              .from("niches")
+              .select("id, name")
+              .eq("name", data.customNiche.trim())
+              .maybeSingle();
+              
+            if (!existingNiche) {
+              await supabase
+                .from("niches")
+                .insert({ name: data.customNiche.trim() });
+            }
+            
+            // Replace "Other" with the custom niche name
+            allNiches = allNiches.filter(n => n !== "Other").concat(data.customNiche.trim());
+          }
+          
           const { data: nicheData } = await supabase
             .from("niches")
             .select("id, name")
-            .in("name", data.selectedNiches);
+            .in("name", allNiches);
 
           if (nicheData) {
             const nicheInserts = nicheData.map(niche => ({
