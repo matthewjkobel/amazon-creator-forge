@@ -95,6 +95,8 @@ const CreatorProfile = () => {
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
   const [showImageEditor, setShowImageEditor] = useState(false);
   const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
+  const [originalImageFile, setOriginalImageFile] = useState<File | null>(null);
+  const [imageEditState, setImageEditState] = useState<{ zoom: number; position: { x: number; y: number } }>({ zoom: 1, position: { x: 0, y: 0 } });
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -655,7 +657,7 @@ const CreatorProfile = () => {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
 
-  const handleImageSave = (croppedBlob: Blob) => {
+  const handleImageSave = (croppedBlob: Blob, preservedState?: { zoom: number; position: { x: number; y: number } }) => {
     // Convert blob to file
     const file = new File([croppedBlob], selectedImageFile?.name || 'profile-image.jpg', {
       type: 'image/jpeg'
@@ -666,6 +668,11 @@ const CreatorProfile = () => {
     
     // Create preview URL
     setHeadshotPreview(URL.createObjectURL(croppedBlob));
+    
+    // Preserve edit state for future edits
+    if (preservedState) {
+      setImageEditState(preservedState);
+    }
     
     // Close editor
     setShowImageEditor(false);
@@ -695,6 +702,8 @@ const CreatorProfile = () => {
             imageFile={selectedImageFile}
             onSave={handleImageSave}
             onCancel={handleImageCancel}
+            initialZoom={imageEditState.zoom}
+            initialPosition={imageEditState.position}
           />
         </div>
       </div>
@@ -778,7 +787,7 @@ const CreatorProfile = () => {
                         <div className="space-y-4">
                           {(headshotPreview || value) && (
                             <div className="flex flex-col items-center gap-4">
-                              <Avatar className="h-48 w-48">
+                              <Avatar className="h-72 w-72">
                                 <AvatarImage 
                                   src={value ? URL.createObjectURL(value) : headshotPreview} 
                                   alt="Profile preview" 
@@ -790,12 +799,33 @@ const CreatorProfile = () => {
                               <div className="text-sm text-muted-foreground text-center">
                                 Preview - this is how your photo will appear in the directory
                               </div>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                onClick={() => setShowImageEditor(true)}
-                                className="flex items-center gap-2"
-                              >
+                               <Button
+                                 type="button"
+                                 variant="outline"
+                                 onClick={() => {
+                                   if (originalImageFile) {
+                                     setSelectedImageFile(originalImageFile);
+                                     setShowImageEditor(true);
+                                   } else if (headshotPreview) {
+                                     fetch(headshotPreview)
+                                       .then(res => res.blob())
+                                       .then(blob => {
+                                         const file = new File([blob], 'profile.jpg', { type: 'image/jpeg' });
+                                         setSelectedImageFile(file);
+                                         setOriginalImageFile(file);
+                                         setShowImageEditor(true);
+                                       })
+                                       .catch(() => {
+                                         toast({
+                                           title: "Error",
+                                           description: "Could not load image for editing. Please upload a new photo.",
+                                           variant: "destructive"
+                                         });
+                                       });
+                                   }
+                                 }}
+                                 className="flex items-center gap-2"
+                               >
                                 <Camera className="h-4 w-4" />
                                 Edit Photo
                               </Button>
@@ -828,8 +858,9 @@ const CreatorProfile = () => {
                                     return;
                                   }
 
-                                  setSelectedImageFile(file);
-                                  setShowImageEditor(true);
+                                   setSelectedImageFile(file);
+                                   setOriginalImageFile(file);
+                                   setShowImageEditor(true);
                                 }
                               }}
                               {...field}

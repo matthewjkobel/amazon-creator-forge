@@ -113,7 +113,7 @@ const ImageTest = () => {
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <Label htmlFor="image-upload">Select Image File</Label>
+                  <Label htmlFor="image-upload">Select Image File</Label>
                 <Input
                   id="image-upload"
                   type="file"
@@ -124,9 +124,13 @@ const ImageTest = () => {
                 <p className="text-sm text-muted-foreground mt-1">
                   Max file size: 15MB
                 </p>
-                {selectedFile && (
+                {selectedFile ? (
                   <p className="text-sm text-green-600 mt-1">
                     ✓ File selected: {selectedFile.name}
+                  </p>
+                ) : (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    No file selected
                   </p>
                 )}
               </div>
@@ -177,7 +181,7 @@ const ImageTest = () => {
                     <img
                       src={croppedImage}
                       alt="Cropped result"
-                      className="w-48 h-48 object-cover border rounded-full mx-auto"
+                      className="w-72 h-72 object-cover border rounded-full mx-auto"
                     />
                   </div>
                   

@@ -5,13 +5,15 @@ import { ZoomIn, ZoomOut, RotateCcw } from "lucide-react";
 
 interface ImageZoomEditorProps {
   imageFile: File;
-  onSave: (croppedBlob: Blob) => void;
+  onSave: (croppedBlob: Blob, preservedState?: { zoom: number; position: { x: number; y: number } }) => void;
   onCancel: () => void;
+  initialZoom?: number;
+  initialPosition?: { x: number; y: number };
 }
 
-const ImageZoomEditor = ({ imageFile, onSave, onCancel }: ImageZoomEditorProps) => {
-  const [zoom, setZoom] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
+const ImageZoomEditor = ({ imageFile, onSave, onCancel, initialZoom = 1, initialPosition = { x: 0, y: 0 } }: ImageZoomEditorProps) => {
+  const [zoom, setZoom] = useState(initialZoom);
+  const [position, setPosition] = useState(initialPosition);
   const [isDragging, setIsDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -89,7 +91,7 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel }: ImageZoomEditorProps) 
     // Convert canvas to blob
     canvas.toBlob((blob) => {
       if (blob) {
-        onSave(blob);
+        onSave(blob, { zoom, position });
       }
     }, 'image/jpeg', 0.9);
   };
