@@ -231,7 +231,7 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
               <CardTitle>Social Media Links</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-2">
                 {creator.creator_socials.map((social, index) => {
                   const socialUrl = getSocialMediaUrl(social.platform, social.handle || '', social.url);
                   
