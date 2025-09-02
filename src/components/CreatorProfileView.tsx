@@ -16,6 +16,11 @@ interface CreatorProfileViewProps {
     headshot_url?: string;
     storefront_url?: string;
     featured_video_url?: string;
+    featured_content_url_2?: string;
+    featured_content_url_3?: string;
+    featured_content_desc_1?: string;
+    featured_content_desc_2?: string;
+    featured_content_desc_3?: string;
     price_min?: number;
     price_max?: number;
     creator_socials?: Array<{
@@ -275,23 +280,66 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
       )}
 
       {/* Featured Content */}
-      {creator.featured_video_url && (
+      {(creator.featured_video_url || creator.featured_content_url_2 || creator.featured_content_url_3) && (
         <Card>
           <CardHeader>
             <CardTitle>Featured Content Examples</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <Button variant="outline" className="w-full justify-start" asChild>
-                <a 
-                  href={creator.featured_video_url.startsWith('http') ? creator.featured_video_url : `https://${creator.featured_video_url}`}
-                  target="_blank" 
-                  rel="noopener noreferrer"
-                >
-                  <Video className="h-4 w-4 mr-2" />
-                  Content Example 1
-                </a>
-              </Button>
+              {creator.featured_video_url && (
+                <div className="space-y-1">
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <a 
+                      href={creator.featured_video_url.startsWith('http') ? creator.featured_video_url : `https://${creator.featured_video_url}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Content Example 1
+                    </a>
+                  </Button>
+                  {creator.featured_content_desc_1 && (
+                    <p className="text-sm text-muted-foreground pl-6">{creator.featured_content_desc_1}</p>
+                  )}
+                </div>
+              )}
+              
+              {creator.featured_content_url_2 && (
+                <div className="space-y-1">
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <a 
+                      href={creator.featured_content_url_2.startsWith('http') ? creator.featured_content_url_2 : `https://${creator.featured_content_url_2}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Content Example 2
+                    </a>
+                  </Button>
+                  {creator.featured_content_desc_2 && (
+                    <p className="text-sm text-muted-foreground pl-6">{creator.featured_content_desc_2}</p>
+                  )}
+                </div>
+              )}
+              
+              {creator.featured_content_url_3 && (
+                <div className="space-y-1">
+                  <Button variant="outline" className="w-full justify-start" asChild>
+                    <a 
+                      href={creator.featured_content_url_3.startsWith('http') ? creator.featured_content_url_3 : `https://${creator.featured_content_url_3}`}
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                    >
+                      <Video className="h-4 w-4 mr-2" />
+                      Content Example 3
+                    </a>
+                  </Button>
+                  {creator.featured_content_desc_3 && (
+                    <p className="text-sm text-muted-foreground pl-6">{creator.featured_content_desc_3}</p>
+                  )}
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

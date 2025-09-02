@@ -69,6 +69,9 @@ const profileSchema = z.object({
   featuredContentUrl1: flexibleUrlSchema,
   featuredContentUrl2: flexibleUrlSchema,
   featuredContentUrl3: flexibleUrlSchema,
+  featuredContentDesc1: z.string().max(50, "Description must be 50 characters or less").optional(),
+  featuredContentDesc2: z.string().max(50, "Description must be 50 characters or less").optional(),
+  featuredContentDesc3: z.string().max(50, "Description must be 50 characters or less").optional(),
   priceMin: z.string().optional(),
   priceMax: z.string().optional(),
   selectedNiches: z.array(z.string()).min(1, "Please select at least one niche"),
@@ -100,6 +103,9 @@ const CreatorProfile = () => {
       featuredContentUrl1: "",
       featuredContentUrl2: "",
       featuredContentUrl3: "",
+      featuredContentDesc1: "",
+      featuredContentDesc2: "",
+      featuredContentDesc3: "",
       priceMin: "",
       priceMax: "",
       selectedNiches: [],
@@ -179,6 +185,9 @@ const CreatorProfile = () => {
             featuredContentUrl1: creator.featured_video_url || "",
             featuredContentUrl2: "",
             featuredContentUrl3: "",
+            featuredContentDesc1: "",
+            featuredContentDesc2: "",
+            featuredContentDesc3: "",
             priceMin: creator.price_min?.toString() || "",
             priceMax: creator.price_max?.toString() || "",
             selectedNiches,
@@ -251,6 +260,8 @@ const CreatorProfile = () => {
 
       // Auto-save social handles if they exist
       if (creator && formData.socials) {
+        console.log("Auto-saving social media data:", formData.socials);
+        
         // Delete existing socials
         await supabase
           .from("creator_socials")
@@ -297,6 +308,8 @@ const CreatorProfile = () => {
               handle: cleanHandle
             };
           });
+
+        console.log("Social inserts to save:", socialInserts);
 
         if (socialInserts.length > 0) {
           await supabase
@@ -424,58 +437,70 @@ const CreatorProfile = () => {
           }
         }
 
-        // Handle social links
-        // Delete existing socials
-        await supabase
-          .from("creator_socials")
-          .delete()
-          .eq("creator_id", creator.id);
-
-        // Convert handles to full URLs and insert new socials
-        const socialInserts = Object.entries(data.socials)
-          .filter(([_, handle]) => handle && handle.trim())
-          .map(([platform, handle]) => {
-            const cleanHandle = handle.trim();
-            let fullUrl = cleanHandle;
-            
-            // Convert handle to full URL based on platform
-            if (!cleanHandle.startsWith('http')) {
-              switch (platform) {
-                case 'youtube':
-                  fullUrl = `https://youtube.com/@${cleanHandle}`;
-                  break;
-                case 'instagram':
-                  fullUrl = `https://instagram.com/${cleanHandle}`;
-                  break;
-                case 'tiktok':
-                  fullUrl = `https://tiktok.com/@${cleanHandle}`;
-                  break;
-                case 'facebook':
-                  fullUrl = `https://facebook.com/${cleanHandle}`;
-                  break;
-                case 'pinterest':
-                  fullUrl = `https://pinterest.com/${cleanHandle}`;
-                  break;
-                case 'x':
-                  fullUrl = `https://x.com/${cleanHandle}`;
-                  break;
-                default:
-                  fullUrl = cleanHandle;
-              }
-            }
-            
-            return {
-              creator_id: creator.id,
-              platform,
-              url: fullUrl,
-              handle: cleanHandle
-            };
-          });
-
-        if (socialInserts.length > 0) {
+        // Handle social handles
+        if (data.socials) {
+          console.log("Processing social media data:", data.socials);
+          
+          // Delete existing socials first
           await supabase
             .from("creator_socials")
-            .insert(socialInserts);
+            .delete()
+            .eq("creator_id", creator.id);
+
+          // Convert handles to full URLs and insert new socials
+          const socialInserts = Object.entries(data.socials)
+            .filter(([_, handle]) => handle && handle.trim())
+            .map(([platform, handle]) => {
+              const cleanHandle = handle.trim();
+              let fullUrl = cleanHandle;
+              
+              // Convert handle to full URL based on platform
+              if (!cleanHandle.startsWith('http')) {
+                switch (platform) {
+                  case 'youtube':
+                    fullUrl = `https://youtube.com/@${cleanHandle}`;
+                    break;
+                  case 'instagram':
+                    fullUrl = `https://instagram.com/${cleanHandle}`;
+                    break;
+                  case 'tiktok':
+                    fullUrl = `https://tiktok.com/@${cleanHandle}`;
+                    break;
+                  case 'facebook':
+                    fullUrl = `https://facebook.com/${cleanHandle}`;
+                    break;
+                  case 'pinterest':
+                    fullUrl = `https://pinterest.com/${cleanHandle}`;
+                    break;
+                  case 'x':
+                    fullUrl = `https://x.com/${cleanHandle}`;
+                    break;
+                  default:
+                    fullUrl = cleanHandle;
+                }
+              }
+              
+              return {
+                creator_id: creator.id,
+                platform,
+                url: fullUrl,
+                handle: cleanHandle
+              };
+            });
+
+          console.log("Social inserts for manual save:", socialInserts);
+
+          if (socialInserts.length > 0) {
+            const { data: insertResult, error: insertError } = await supabase
+              .from("creator_socials")
+              .insert(socialInserts);
+            
+            if (insertError) {
+              console.error("Error inserting social data:", insertError);
+              throw insertError;
+            }
+            console.log("Successfully saved social data:", insertResult);
+          }
         }
       }
 
@@ -777,56 +802,110 @@ const CreatorProfile = () => {
                   )}
                 />
 
-                <FormField
-                  control={form.control}
-                  name="featuredContentUrl1"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Video className="h-4 w-4" />
-                        Featured Content Example 1
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Link to your best content example" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="featuredContentUrl1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Featured Content Example 1
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Link to your best content example" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="featuredContentDesc1"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Brief description (max 50 characters)" maxLength={50} {...field} />
+                        </FormControl>
+                        <div className="text-sm text-muted-foreground text-right">
+                          {field.value?.length || 0}/50 characters
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="featuredContentUrl2"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Video className="h-4 w-4" />
-                        Featured Content Example 2
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Link to another content example (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="featuredContentUrl2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Featured Content Example 2
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Link to another content example (optional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="featuredContentDesc2"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Brief description (max 50 characters)" maxLength={50} {...field} />
+                        </FormControl>
+                        <div className="text-sm text-muted-foreground text-right">
+                          {field.value?.length || 0}/50 characters
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
 
-                <FormField
-                  control={form.control}
-                  name="featuredContentUrl3"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="flex items-center gap-2">
-                        <Video className="h-4 w-4" />
-                        Featured Content Example 3
-                      </FormLabel>
-                      <FormControl>
-                        <Input placeholder="Link to another content example (optional)" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                <div className="space-y-4">
+                  <FormField
+                    control={form.control}
+                    name="featuredContentUrl3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel className="flex items-center gap-2">
+                          <Video className="h-4 w-4" />
+                          Featured Content Example 3
+                        </FormLabel>
+                        <FormControl>
+                          <Input placeholder="Link to another content example (optional)" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="featuredContentDesc3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Description (Optional)</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Brief description (max 50 characters)" maxLength={50} {...field} />
+                        </FormControl>
+                        <div className="text-sm text-muted-foreground text-right">
+                          {field.value?.length || 0}/50 characters
+                        </div>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
               </CardContent>
             </Card>
 
