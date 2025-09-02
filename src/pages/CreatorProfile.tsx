@@ -27,7 +27,7 @@ const socialPlatforms = [
   { name: "TikTok", value: "tiktok", icon: Video, placeholder: "yourhandle" },
   { name: "Facebook", value: "facebook", icon: ExternalLink, placeholder: "yourpage" },
   { name: "Pinterest", value: "pinterest", icon: ExternalLink, placeholder: "yourhandle" },
-  { name: "X (Twitter)", value: "twitter", icon: ExternalLink, placeholder: "yourhandle" }
+  { name: "X (Twitter)", value: "x", icon: ExternalLink, placeholder: "yourhandle" }
 ];
 
 const niches = [
@@ -170,7 +170,8 @@ const CreatorProfile = () => {
                 handle = url;
               }
             }
-            const platformKey = social.platform === 'x' ? 'twitter' : social.platform;
+                  // Keep platform as 'x' for form consistency with socialPlatforms array
+                  const platformKey = social.platform === 'x' ? 'x' : social.platform;
             socialsData[platformKey] = handle;
           });
 
@@ -276,39 +277,38 @@ const CreatorProfile = () => {
         const socialInserts = Object.entries(formData.socials)
           .filter(([_, handle]) => handle && handle.trim())
           .map(([platform, handle]) => {
-            const cleanHandle = handle.trim();
-            const normalizedPlatform = platform === 'x' ? 'twitter' : platform;
-            let fullUrl = cleanHandle;
+              const cleanHandle = handle.trim();
+              let fullUrl = cleanHandle;
             
-            // Convert handle to full URL based on platform
-            if (!cleanHandle.startsWith('http')) {
-              switch (normalizedPlatform) {
-                case 'youtube':
-                  fullUrl = `https://youtube.com/@${cleanHandle}`;
-                  break;
-                case 'instagram':
-                  fullUrl = `https://instagram.com/${cleanHandle}`;
-                  break;
-                case 'tiktok':
-                  fullUrl = `https://tiktok.com/@${cleanHandle}`;
-                  break;
-                case 'facebook':
-                  fullUrl = `https://facebook.com/${cleanHandle}`;
-                  break;
-                case 'pinterest':
-                  fullUrl = `https://pinterest.com/${cleanHandle}`;
-                  break;
-                case 'twitter':
-                  fullUrl = `https://x.com/${cleanHandle}`;
-                  break;
-                default:
-                  fullUrl = cleanHandle;
-              }
+              // Convert handle to full URL based on platform
+              if (!cleanHandle.startsWith('http')) {
+                switch (platform) {
+                  case 'youtube':
+                    fullUrl = `https://youtube.com/@${cleanHandle}`;
+                    break;
+                  case 'instagram':
+                    fullUrl = `https://instagram.com/${cleanHandle}`;
+                    break;
+                  case 'tiktok':
+                    fullUrl = `https://tiktok.com/@${cleanHandle}`;
+                    break;
+                  case 'facebook':
+                    fullUrl = `https://facebook.com/${cleanHandle}`;
+                    break;
+                  case 'pinterest':
+                    fullUrl = `https://pinterest.com/${cleanHandle}`;
+                    break;
+                  case 'x':
+                    fullUrl = `https://x.com/${cleanHandle}`;
+                    break;
+                  default:
+                    fullUrl = cleanHandle;
+                }
             }
             
             return {
               creator_id: creator.id,
-              platform: normalizedPlatform,
+              platform: platform,
               url: fullUrl,
               handle: cleanHandle
             };
@@ -466,12 +466,11 @@ const CreatorProfile = () => {
             .filter(([_, handle]) => handle && handle.trim())
             .map(([platform, handle]) => {
               const cleanHandle = handle.trim();
-              const normalizedPlatform = platform === 'x' ? 'twitter' : platform;
               let fullUrl = cleanHandle;
               
               // Convert handle to full URL based on platform
               if (!cleanHandle.startsWith('http')) {
-                switch (normalizedPlatform) {
+                switch (platform) {
                   case 'youtube':
                     fullUrl = `https://youtube.com/@${cleanHandle}`;
                     break;
@@ -487,7 +486,7 @@ const CreatorProfile = () => {
                   case 'pinterest':
                     fullUrl = `https://pinterest.com/${cleanHandle}`;
                     break;
-                  case 'twitter':
+                  case 'x':
                     fullUrl = `https://x.com/${cleanHandle}`;
                     break;
                   default:
@@ -497,7 +496,7 @@ const CreatorProfile = () => {
               
               return {
                 creator_id: creator.id,
-              platform: normalizedPlatform,
+                platform: platform,
                 url: fullUrl,
                 handle: cleanHandle
               };

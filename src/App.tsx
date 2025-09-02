@@ -18,6 +18,7 @@ import BrandProfile from "./pages/BrandProfile";
 import BrandDashboard from "./pages/BrandDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailTest from "./pages/EmailTest";
+import ImageTest from "./pages/ImageTest";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -62,6 +63,7 @@ const AuthRouter = () => {
       <Route path="/brand-dashboard" element={<BrandDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/email-test" element={<EmailTest />} />
+      <Route path="/image-test" element={<ImageTest />} />
       {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
       <Route path="*" element={<NotFound />} />
     </Routes>
