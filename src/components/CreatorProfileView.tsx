@@ -231,24 +231,19 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
               <CardTitle>Social Media Links</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="space-y-3">
+              <div className="space-y-2">
                 {creator.creator_socials.map((social, index) => {
                   const socialUrl = getSocialMediaUrl(social.platform, social.handle || '', social.url);
                   
                   return (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
-                      <div className="flex items-center gap-3">
+                    <div key={index} className="flex items-center justify-between p-2 bg-muted/50 rounded-lg hover:bg-muted/80 transition-colors">
+                      <div className="flex items-center gap-2">
                         {getPlatformIcon(social.platform)}
                         <div>
-                          <p className="font-medium">{getPlatformName(social.platform)}</p>
-                          <p className="text-sm text-muted-foreground">
+                          <p className="text-sm font-medium">{getPlatformName(social.platform)}</p>
+                          <p className="text-xs text-muted-foreground">
                             @{social.handle || social.url?.split('/').pop() || 'profile'}
                           </p>
-                          {social.followers && (
-                            <p className="text-xs text-muted-foreground">
-                              {social.followers.toLocaleString()} followers
-                            </p>
-                          )}
                         </div>
                       </div>
                       <Button variant="ghost" size="sm" asChild>
@@ -258,7 +253,7 @@ const CreatorProfileView = ({ creator, isEditable = false, onEdit }: CreatorProf
                           rel="noopener noreferrer"
                           className="hover:scale-105 transition-transform"
                         >
-                          <ExternalLink className="h-4 w-4" />
+                          <ExternalLink className="h-3 w-3" />
                         </a>
                       </Button>
                     </div>
