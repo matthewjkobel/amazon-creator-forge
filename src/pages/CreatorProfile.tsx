@@ -272,11 +272,15 @@ const CreatorProfile = () => {
       if (creator && formData.socials) {
         console.log("Auto-saving social media data:", formData.socials);
         
-        // Delete existing socials
-        await supabase
+        // Delete existing socials first to prevent duplicates
+        const { error: deleteError } = await supabase
           .from("creator_socials")
           .delete()
           .eq("creator_id", creator.id);
+
+        if (deleteError) {
+          console.warn("Error deleting existing socials:", deleteError);
+        }
 
         // Convert handles to full URLs and insert new socials
         const socialInserts = Object.entries(formData.socials)
@@ -322,9 +326,13 @@ const CreatorProfile = () => {
         console.log("Social inserts to save:", socialInserts);
 
         if (socialInserts.length > 0) {
-          await supabase
+          const { error: insertError } = await supabase
             .from("creator_socials")
             .insert(socialInserts);
+            
+          if (insertError) {
+            console.warn("Error inserting socials:", insertError);
+          }
         }
       }
 
