@@ -106,27 +106,41 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel, initialZoom = 1, initial
           </p>
         </div>
 
-        <div 
-          className="relative w-80 h-80 mx-auto border-2 border-dashed border-border rounded-full overflow-hidden bg-muted cursor-move"
-          onMouseDown={handleMouseDown}
-          onMouseMove={handleMouseMove}
-          onMouseUp={handleMouseUp}
-          onMouseLeave={handleMouseUp}
-        >
-          <img
-            ref={imageRef}
-            src={URL.createObjectURL(imageFile)}
-            alt="Profile preview"
-            className="absolute max-w-none"
+        <div className="relative w-80 h-80 mx-auto">
+          {/* Full image preview container */}
+          <div 
+            className="relative w-full h-full bg-muted cursor-move overflow-hidden"
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          >
+            <img
+              ref={imageRef}
+              src={URL.createObjectURL(imageFile)}
+              alt="Profile preview"
+              className="absolute max-w-none"
+              style={{
+                transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
+                transformOrigin: 'center',
+                width: '100%',
+                height: '100%',
+                objectFit: 'cover'
+              }}
+              draggable={false}
+            />
+          </div>
+          {/* Circular crop overlay */}
+          <div className="absolute inset-0 pointer-events-none">
+            <div className="w-full h-full border-2 border-dashed border-primary rounded-full"></div>
+          </div>
+          {/* Dimmed overlay with circular cutout */}
+          <div 
+            className="absolute inset-0 pointer-events-none"
             style={{
-              transform: `scale(${zoom}) translate(${position.x / zoom}px, ${position.y / zoom}px)`,
-              transformOrigin: 'center',
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover'
+              background: `radial-gradient(circle at center, transparent 50%, rgba(0,0,0,0.4) 50%)`
             }}
-            draggable={false}
-          />
+          ></div>
         </div>
 
         <div className="flex justify-center gap-2">
