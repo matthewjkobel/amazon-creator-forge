@@ -12,7 +12,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Users, MapPin, Globe, ShoppingBag, Video, DollarSign, Instagram, Youtube, FileText, ExternalLink, AlertCircle, Check, CheckCircle, Clock, XCircle } from "lucide-react";
+import { Users, MapPin, Globe, ShoppingBag, Video, DollarSign, Instagram, Youtube, FileText, ExternalLink, AlertCircle, Check, CheckCircle, Clock, XCircle, Camera } from "lucide-react";
+import ImageZoomEditor from "@/components/ImageZoomEditor";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -92,6 +93,8 @@ const CreatorProfile = () => {
   const [headshotPreview, setHeadshotPreview] = useState<string>("");
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
+  const [showImageEditor, setShowImageEditor] = useState(false);
+  const [selectedImageFile, setSelectedImageFile] = useState<File | null>(null);
 
   const form = useForm<ProfileFormData>({
     resolver: zodResolver(profileSchema),
@@ -652,8 +655,50 @@ const CreatorProfile = () => {
     return <div className="min-h-screen bg-background flex items-center justify-center">Loading...</div>;
   }
 
+  const handleImageSave = (croppedBlob: Blob) => {
+    // Convert blob to file
+    const file = new File([croppedBlob], selectedImageFile?.name || 'profile-image.jpg', {
+      type: 'image/jpeg'
+    });
+    
+    // Update form
+    form.setValue('headshotFile', file);
+    
+    // Create preview URL
+    setHeadshotPreview(URL.createObjectURL(croppedBlob));
+    
+    // Close editor
+    setShowImageEditor(false);
+    
+    toast({
+      title: "Photo updated!",
+      description: "Your profile photo has been cropped and updated."
+    });
+  };
+
+  const handleImageCancel = () => {
+    setShowImageEditor(false);
+    setSelectedImageFile(null);
+  };
+
   if (!user) {
     return null;
+  }
+
+  // Show image editor if active
+  if (showImageEditor && selectedImageFile) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <div className="container mx-auto px-4 py-8">
+          <ImageZoomEditor
+            imageFile={selectedImageFile}
+            onSave={handleImageSave}
+            onCancel={handleImageCancel}
+          />
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -723,52 +768,87 @@ const CreatorProfile = () => {
                   )}
                 />
 
-                 <FormField
-                   control={form.control}
-                   name="headshotFile"
-                   render={({ field: { onChange, value, ...field } }) => (
-                     <FormItem>
-                       <FormLabel>Profile Photo</FormLabel>
-                       <FormControl>
-                          <div className="space-y-4">
-                            {(headshotPreview || value) && (
-                              <div className="flex flex-col items-center gap-4">
-                                <Avatar className="h-32 w-32">
-                                  <AvatarImage 
-                                    src={value ? URL.createObjectURL(value) : headshotPreview} 
-                                    alt="Profile preview" 
-                                  />
-                                  <AvatarFallback className="text-2xl">
-                                    {form.getValues("displayName")?.charAt(0)?.toUpperCase() || "P"}
-                                  </AvatarFallback>
-                                </Avatar>
-                                <div className="text-sm text-muted-foreground text-center">
-                                  Preview - this is how your photo will appear in the directory
-                                </div>
+                <FormField
+                  control={form.control}
+                  name="headshotFile"
+                  render={({ field: { onChange, value, ...field } }) => (
+                    <FormItem>
+                      <FormLabel>Profile Photo</FormLabel>
+                      <FormControl>
+                        <div className="space-y-4">
+                          {(headshotPreview || value) && (
+                            <div className="flex flex-col items-center gap-4">
+                              <Avatar className="h-48 w-48">
+                                <AvatarImage 
+                                  src={value ? URL.createObjectURL(value) : headshotPreview} 
+                                  alt="Profile preview" 
+                                />
+                                <AvatarFallback className="text-3xl">
+                                  {form.getValues("displayName")?.charAt(0)?.toUpperCase() || "P"}
+                                </AvatarFallback>
+                              </Avatar>
+                              <div className="text-sm text-muted-foreground text-center">
+                                Preview - this is how your photo will appear in the directory
                               </div>
-                            )}
+                              <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowImageEditor(true)}
+                                className="flex items-center gap-2"
+                              >
+                                <Camera className="h-4 w-4" />
+                                Edit Photo
+                              </Button>
+                            </div>
+                          )}
+                          <div className="space-y-2">
                             <Input
                               type="file"
                               accept="image/*"
                               onChange={(e) => {
                                 const file = e.target.files?.[0];
-                                onChange(file);
-                                // Create preview URL for new files
                                 if (file) {
-                                  setHeadshotPreview(URL.createObjectURL(file));
+                                  // Validate file type
+                                  if (!file.type.startsWith('image/')) {
+                                    toast({
+                                      title: "Invalid file type",
+                                      description: "Please select an image file.",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+
+                                  // Validate file size (15MB max)
+                                  if (file.size > 15 * 1024 * 1024) {
+                                    toast({
+                                      title: "File too large",
+                                      description: "Please select an image under 15MB.",
+                                      variant: "destructive"
+                                    });
+                                    return;
+                                  }
+
+                                  setSelectedImageFile(file);
+                                  setShowImageEditor(true);
                                 }
                               }}
                               {...field}
                             />
+                            {selectedImageFile && (
+                              <div className="text-sm text-muted-foreground">
+                                Selected: {selectedImageFile.name}
+                              </div>
+                            )}
                           </div>
-                       </FormControl>
-                        <div className="text-sm text-muted-foreground">
-                          Upload an image file (max 15MB). Supports JPG, PNG, GIF, etc.
                         </div>
-                       <FormMessage />
-                     </FormItem>
-                   )}
-                 />
+                      </FormControl>
+                      <div className="text-sm text-muted-foreground">
+                        Upload an image file (max 15MB). Supports JPG, PNG, GIF, etc.
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 <FormField
                   control={form.control}

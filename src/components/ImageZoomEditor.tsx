@@ -105,7 +105,7 @@ const ImageZoomEditor = ({ imageFile, onSave, onCancel }: ImageZoomEditorProps) 
         </div>
 
         <div 
-          className="relative w-80 h-80 mx-auto border-2 border-dashed border-border rounded-lg overflow-hidden bg-muted cursor-move"
+          className="relative w-80 h-80 mx-auto border-2 border-dashed border-border rounded-full overflow-hidden bg-muted cursor-move"
           onMouseDown={handleMouseDown}
           onMouseMove={handleMouseMove}
           onMouseUp={handleMouseUp}

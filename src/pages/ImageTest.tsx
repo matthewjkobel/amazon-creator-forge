@@ -124,6 +124,11 @@ const ImageTest = () => {
                 <p className="text-sm text-muted-foreground mt-1">
                   Max file size: 15MB
                 </p>
+                {selectedFile && (
+                  <p className="text-sm text-green-600 mt-1">
+                    ✓ File selected: {selectedFile.name}
+                  </p>
+                )}
               </div>
 
               {selectedFile && (
@@ -172,7 +177,7 @@ const ImageTest = () => {
                     <img
                       src={croppedImage}
                       alt="Cropped result"
-                      className="w-48 h-48 object-cover border rounded mx-auto"
+                      className="w-48 h-48 object-cover border rounded-full mx-auto"
                     />
                   </div>
                   
