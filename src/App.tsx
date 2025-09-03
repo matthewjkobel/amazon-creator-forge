@@ -30,19 +30,31 @@ const AuthRouter = () => {
 
   useEffect(() => {
     const handleAuthRedirect = async () => {
+      console.log("🔄 Auth redirect check:", { loading, user: user?.id, pathname: location.pathname });
+      
       // Don't redirect if still loading or user is not authenticated
-      if (loading || !user) return;
+      if (loading || !user) {
+        console.log("⏸️ Skipping redirect - loading or no user");
+        return;
+      }
       
       // Don't redirect if user is on auth-related or profile editing routes
       const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile'];
-      if (excludedRoutes.includes(location.pathname)) return;
+      if (excludedRoutes.includes(location.pathname)) {
+        console.log("⏸️ Skipping redirect - on excluded route");
+        return;
+      }
       
       // Get appropriate redirect path based on user's profile
       const redirectPath = await getRedirectPath(user.id);
+      console.log("🎯 Redirect path determined:", redirectPath);
       
       // Only redirect if we're not already on the correct path
       if (location.pathname !== redirectPath) {
+        console.log("➡️ Redirecting from", location.pathname, "to", redirectPath);
         navigate(redirectPath);
+      } else {
+        console.log("✅ Already on correct path");
       }
     };
 
