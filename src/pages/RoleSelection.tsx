@@ -150,6 +150,39 @@ const RoleSelection = () => {
     setError("");
 
     try {
+      // Check if user already has the selected profile type
+      if (selectedRole === "creator") {
+        const { data: existingCreator } = await supabase
+          .from("creators")
+          .select("id")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (existingCreator) {
+          toast({
+            title: "Profile exists",
+            description: "Redirecting to your creator dashboard.",
+          });
+          navigate("/creator-dashboard");
+          return;
+        }
+      } else {
+        const { data: existingBrand } = await supabase
+          .from("brands")
+          .select("id")
+          .eq("user_id", currentUser.id)
+          .maybeSingle();
+
+        if (existingBrand) {
+          toast({
+            title: "Profile exists", 
+            description: "Redirecting to your brand dashboard.",
+          });
+          navigate("/brand-dashboard");
+          return;
+        }
+      }
+
       // First ensure user exists in public.users table
       const { error: userError } = await supabase.rpc('ensure_user_row', {
         p_id: currentUser.id,
