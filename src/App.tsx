@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { useEffect } from "react";
 import { getRedirectPath } from "./utils/authRedirect";
+import { supabase } from "@/integrations/supabase/client";
 import Home from "./pages/Home";
 import Directory from "./pages/Directory";
 import HowItWorks from "./pages/HowItWorks";
@@ -35,15 +36,30 @@ const AuthRouter = () => {
       if (loading || !user) return;
       
       // Don't redirect if user is on auth-related or profile editing routes
-      const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile', '/brand-onboarding'];
+      const excludedRoutes = ['/auth', '/creator-profile', '/brand-profile', '/brand-onboarding'];
       if (excludedRoutes.includes(location.pathname)) return;
       
-      // Get appropriate redirect path based on user's profile
-      const redirectPath = await getRedirectPath(user.id);
-      
-      // Only redirect if we're not already on the correct path
-      if (location.pathname !== redirectPath) {
-        navigate(redirectPath);
+      try {
+        // Ensure user row exists in public.users table first
+        await supabase.rpc('ensure_user_row', {
+          p_id: user.id,
+          p_email: user.email,
+          p_full_name: user.user_metadata?.full_name || user.email?.split('@')[0]
+        });
+        
+        // Get appropriate redirect path based on user's profile
+        const redirectPath = await getRedirectPath(user.id);
+        
+        // Only redirect if we're not already on the correct path
+        if (location.pathname !== redirectPath) {
+          navigate(redirectPath);
+        }
+      } catch (error) {
+        console.error("Error in auth redirect:", error);
+        // If there's an error, still try to redirect to role selection
+        if (location.pathname !== '/role-selection') {
+          navigate('/role-selection');
+        }
       }
     };
 
