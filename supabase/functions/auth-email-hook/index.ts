@@ -130,7 +130,7 @@ serve(async (req) => {
       });
       try {
         const result = await resend.emails.send({
-          from: "Partner Connections <no-reply@mail.partnerconnections.com>",
+          from: "Partner Connections <mail@partnerconnections.com>",
           to: [userEmail],
           subject: "Your secure sign-in link",
           html,
