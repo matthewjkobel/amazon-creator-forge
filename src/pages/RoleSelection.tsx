@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Building2, Palette, AlertCircle, CheckCircle } from "lucide-react";
+import { Users, Building2, Palette, AlertCircle, CheckCircle, TestTube } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -21,14 +21,56 @@ const RoleSelection = () => {
   const [existingProfile, setExistingProfile] = useState<ExistingProfile | null>(null);
   const [showExistingProfilePrompt, setShowExistingProfilePrompt] = useState(false);
   const [checkingProfiles, setCheckingProfiles] = useState(true);
+  const [testMode, setTestMode] = useState(false);
+  const [simulatedUser, setSimulatedUser] = useState<any>(null);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Test mode users
+  const testUsers = {
+    creator: {
+      id: '11111111-1111-1111-1111-111111111111',
+      email: 'test.creator@example.com',
+      user_metadata: { full_name: 'Test Creator' }
+    },
+    brand: {
+      id: '22222222-2222-2222-2222-222222222222', 
+      email: 'test.brand@example.com',
+      user_metadata: { full_name: 'Test Brand User' }
+    }
+  };
+
+  // Test mode functions
+  const enterTestMode = (userType: 'creator' | 'brand') => {
+    setTestMode(true);
+    setSimulatedUser(testUsers[userType]);
+    toast({
+      title: "Test Mode Activated",
+      description: `Simulating login as ${userType}`,
+    });
+  };
+
+  const exitTestMode = () => {
+    setTestMode(false);
+    setSimulatedUser(null);
+    setExistingProfile(null);
+    setShowExistingProfilePrompt(false);
+    setCheckingProfiles(true);
+    toast({
+      title: "Test Mode Disabled",
+      description: "Returning to normal authentication",
+    });
+  };
+
   // Check for existing profiles when component mounts
   useEffect(() => {
     const checkExistingProfiles = async () => {
-      if (!user) return;
+      const currentUser = testMode ? simulatedUser : user;
+      if (!currentUser) {
+        setCheckingProfiles(false);
+        return;
+      }
       
       setCheckingProfiles(true);
       
@@ -37,7 +79,7 @@ const RoleSelection = () => {
         const { data: creatorData } = await supabase
           .from("creators")
           .select("id, display_name")
-          .eq("user_id", user.id)
+          .eq("user_id", currentUser.id)
           .maybeSingle();
 
         if (creatorData) {
@@ -54,7 +96,7 @@ const RoleSelection = () => {
         const { data: brandData } = await supabase
           .from("brands")
           .select("id, company_name")
-          .eq("user_id", user.id)
+          .eq("user_id", currentUser.id)
           .maybeSingle();
 
         if (brandData) {
@@ -73,7 +115,7 @@ const RoleSelection = () => {
     };
 
     checkExistingProfiles();
-  }, [user]);
+  }, [user, testMode, simulatedUser]);
 
   const handleRoleSelect = (role: "creator" | "brand") => {
     setSelectedRole(role);
@@ -101,7 +143,8 @@ const RoleSelection = () => {
   };
 
   const handleContinue = async () => {
-    if (!selectedRole || !user) return;
+    const currentUser = testMode ? simulatedUser : user;
+    if (!selectedRole || !currentUser) return;
 
     setLoading(true);
     setError("");
@@ -109,9 +152,9 @@ const RoleSelection = () => {
     try {
       // First ensure user exists in public.users table
       const { error: userError } = await supabase.rpc('ensure_user_row', {
-        p_id: user.id,
-        p_email: user.email || '',
-        p_full_name: user.user_metadata?.full_name || '',
+        p_id: currentUser.id,
+        p_email: currentUser.email || '',
+        p_full_name: currentUser.user_metadata?.full_name || '',
         p_role: selectedRole === "creator" ? 'creator' : 'brand'
       });
 
@@ -126,8 +169,8 @@ const RoleSelection = () => {
         const { error } = await supabase
           .from("creators")
           .insert({
-            user_id: user.id,
-            display_name: user.user_metadata?.full_name || "New Creator",
+            user_id: currentUser.id,
+            display_name: currentUser.user_metadata?.full_name || "New Creator",
             visibility: "public"
           });
 
@@ -158,17 +201,75 @@ const RoleSelection = () => {
     }
   };
 
+  // Show test mode controls if no user is authenticated
+  if (!testMode && !user) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+              <Users className="h-8 w-8 text-primary" />
+              PartnerConnections
+            </div>
+            <h1 className="text-2xl font-bold mb-2">Test Mode</h1>
+            <p className="text-muted-foreground">
+              Test the profile detection flow with simulated users
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            <Card className="p-4">
+              <div className="flex items-center gap-3 mb-3">
+                <TestTube className="h-5 w-5 text-primary" />
+                <span className="font-medium">Test Profile Detection</span>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => enterTestMode('creator')}
+                >
+                  <Palette className="h-4 w-4 mr-2" />
+                  Test as Creator (has existing profile)
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="w-full justify-start"
+                  onClick={() => enterTestMode('brand')}
+                >
+                  <Building2 className="h-4 w-4 mr-2" />
+                  Test as Brand (has existing profile)
+                </Button>
+              </div>
+            </Card>
+
+            <div className="text-center">
+              <Button variant="ghost" asChild>
+                <a href="/auth">Sign in normally</a>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Show loading state while checking profiles
   if (checkingProfiles) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="text-center">
-          <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
-            <Users className="h-8 w-8 text-primary" />
-            PartnerConnections
+          <div className="text-center">
+            <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+              <Users className="h-8 w-8 text-primary" />
+              PartnerConnections
+            </div>
+            <p className="text-muted-foreground">Checking your account...</p>
+            {testMode && (
+              <div className="mt-2 text-sm text-blue-600">
+                Test Mode: {simulatedUser?.email}
+              </div>
+            )}
           </div>
-          <p className="text-muted-foreground">Checking your account...</p>
-        </div>
       </div>
     );
   }
@@ -225,6 +326,17 @@ const RoleSelection = () => {
             >
               Create a Different Profile Type
             </Button>
+
+            {testMode && (
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                className="w-full"
+                onClick={exitTestMode}
+              >
+                Exit Test Mode
+              </Button>
+            )}
           </div>
 
           <p className="text-xs text-muted-foreground text-center mt-4">
@@ -248,6 +360,14 @@ const RoleSelection = () => {
           <p className="text-muted-foreground">
             Select how you'd like to use PartnerConnections. You can change this later if needed.
           </p>
+          {testMode && (
+            <div className="mt-2 text-sm text-blue-600 bg-blue-50 rounded p-2">
+              Test Mode: {simulatedUser?.email}
+              <Button variant="ghost" size="sm" onClick={exitTestMode} className="ml-2">
+                Exit Test Mode
+              </Button>
+            </div>
+          )}
         </div>
 
         {error && (
