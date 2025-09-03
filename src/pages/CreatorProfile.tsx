@@ -21,6 +21,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import Header from "@/components/Header";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const socialPlatforms = [
   { name: "YouTube", value: "youtube", icon: Youtube, placeholder: "yourhandle" },
@@ -1278,6 +1279,16 @@ const CreatorProfile = () => {
               </div>
             </div>
           )}
+
+          {/* Role Switcher */}
+          <div className="mt-6 pt-6 border-t">
+            <div className="text-center">
+              <h3 className="font-medium text-sm mb-3 text-muted-foreground">
+                Want to use PartnerConnections as a brand instead?
+              </h3>
+              <RoleSwitcher currentRole="creator" className="w-full sm:w-auto" />
+            </div>
+          </div>
         </Form>
       </div>
     </div>

@@ -17,6 +17,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Header from "@/components/Header";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const niches = [
   "Beauty", "Fashion", "Fitness", "Food", "Home", "Outdoors", "Parenting", "Pets", "Tech", "Travel", "Other"
@@ -591,6 +592,16 @@ const BrandOnboarding = () => {
                 </Button>
               </div>
             </form>
+
+            {/* Role Switcher */}
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-center">
+                <h3 className="font-medium text-sm mb-3 text-muted-foreground">
+                  Want to use PartnerConnections as a creator instead?
+                </h3>
+                <RoleSwitcher currentRole="brand" className="w-full sm:w-auto" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>

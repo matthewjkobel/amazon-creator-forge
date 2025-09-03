@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import RoleSwitcher from "@/components/RoleSwitcher";
 
 const brandSchema = z.object({
   company_name: z.string().min(1, "Brand name is required").max(100, "Brand name must be 100 characters or less"),
@@ -393,6 +394,16 @@ const BrandProfile = () => {
                 </div>
               </div>
             )}
+
+            {/* Role Switcher */}
+            <div className="mt-6 pt-6 border-t">
+              <div className="text-center">
+                <h3 className="font-medium text-sm mb-3 text-muted-foreground">
+                  Want to use PartnerConnections as a creator instead?
+                </h3>
+                <RoleSwitcher currentRole="brand" className="w-full sm:w-auto" />
+              </div>
+            </div>
           </CardContent>
         </Card>
       </div>
