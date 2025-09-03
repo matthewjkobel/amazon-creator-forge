@@ -15,6 +15,7 @@ import RoleSelection from "./pages/RoleSelection";
 import CreatorProfile from "./pages/CreatorProfile";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import BrandProfile from "./pages/BrandProfile";
+import BrandOnboarding from "./pages/BrandOnboarding";
 import BrandDashboard from "./pages/BrandDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailTest from "./pages/EmailTest";
@@ -39,7 +40,7 @@ const AuthRouter = () => {
       }
       
       // Don't redirect if user is on auth-related or profile editing routes
-      const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile'];
+      const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile', '/brand-onboarding'];
       if (excludedRoutes.includes(location.pathname)) {
         console.log("⏸️ Skipping redirect - on excluded route");
         return;
@@ -72,6 +73,7 @@ const AuthRouter = () => {
       <Route path="/creator-profile" element={<CreatorProfile />} />
       <Route path="/creator-dashboard" element={<CreatorDashboard />} />
       <Route path="/brand-profile" element={<BrandProfile />} />
+      <Route path="/brand-onboarding" element={<BrandOnboarding />} />
       <Route path="/brand-dashboard" element={<BrandDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/email-test" element={<EmailTest />} />

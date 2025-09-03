@@ -37,6 +37,7 @@ const RoleSelection = () => {
       });
 
       if (userError) {
+        console.error("User row creation error:", userError);
         setError("Failed to set up user profile. Please try again.");
         return;
       }
@@ -52,6 +53,7 @@ const RoleSelection = () => {
           });
 
         if (error) {
+          console.error("Creator profile creation error:", error);
           setError("Failed to create creator profile. Please try again.");
           return;
         }
@@ -62,26 +64,15 @@ const RoleSelection = () => {
         });
         navigate("/creator-profile");
       } else {
-        // Create brand profile
-        const { error } = await supabase
-          .from("brands")
-          .insert({
-            user_id: user.id,
-            company_name: user.user_metadata?.full_name || "New Brand"
-          });
-
-        if (error) {
-          setError("Failed to create brand profile. Please try again.");
-          return;
-        }
-
+        // For brands, just navigate to onboarding - don't create profile yet
         toast({
           title: "Welcome to PartnerConnections!",
-          description: "Your brand profile has been created successfully.",
+          description: "Let's set up your brand profile.",
         });
-        navigate("/brand-profile");
+        navigate("/brand-onboarding");
       }
     } catch (err) {
+      console.error("Unexpected error in role selection:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);

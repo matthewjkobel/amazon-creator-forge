@@ -45,8 +45,8 @@ export const getRedirectPath = async (userId: string): Promise<string> => {
         console.log("➡️ Redirecting to brand dashboard");
         return "/brand-dashboard";
       } else {
-        console.log("➡️ Redirecting to brand profile");
-        return "/brand-profile";
+        console.log("➡️ Redirecting to brand onboarding");
+        return "/brand-onboarding";
       }
     }
 
