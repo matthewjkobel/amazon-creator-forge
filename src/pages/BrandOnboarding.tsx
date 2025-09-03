@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,7 +17,6 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import Header from "@/components/Header";
-import RoleSwitcher from "@/components/RoleSwitcher";
 
 const niches = [
   "Beauty", "Fashion", "Fitness", "Food", "Home", "Outdoors", "Parenting", "Pets", "Tech", "Travel", "Other"
@@ -77,9 +76,6 @@ const BrandOnboarding = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
-  const [isExistingBrand, setIsExistingBrand] = useState(false);
-  const [brandData, setBrandData] = useState<any>(null);
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [logoPreview, setLogoPreview] = useState<string>("");
   const [imageZoom, setImageZoom] = useState(1);
   const [imagePosition, setImagePosition] = useState({ x: 0, y: 0 });
@@ -110,111 +106,6 @@ const BrandOnboarding = () => {
     }
   }, [user, authLoading, navigate]);
 
-  // Load existing brand profile if exists
-  useEffect(() => {
-    const loadBrandProfile = async () => {
-      if (!user) return;
-
-      try {
-        // Check if brand profile exists
-        const { data: brand, error } = await supabase
-          .from("brands")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (brand && !error) {
-          setIsExistingBrand(true);
-          setBrandData(brand);
-          
-          // Populate form with existing data
-          form.reset({
-            brandName: brand.company_name || "",
-            website: brand.website_url || "",
-            amazonStorefront: brand.amazon_storefront_url || "",
-            about: brand.about || "",
-            contactName: brand.contact_name || "",
-            selectedNiches: [], // We'll need to load niches separately if we implement brand_niches table
-            customNiche: "",
-            logoFile: undefined
-          });
-
-          // Set existing logo preview if available
-          if (brand.logo_url) {
-            setLogoPreview(brand.logo_url);
-          }
-        }
-      } catch (err) {
-        console.error("Error loading brand profile:", err);
-      }
-    };
-
-    loadBrandProfile();
-  }, [user, form]);
-
-  // Auto-save to database
-  const autoSaveToDatabase = useCallback(async (formData: BrandOnboardingFormData) => {
-    if (!user || !autoSaveEnabled) return;
-
-    try {
-      // First ensure user exists in public.users table
-      const { error: userError } = await supabase.rpc('ensure_user_row', {
-        p_id: user.id,
-        p_email: user.email || '',
-        p_full_name: user.user_metadata?.full_name || '',
-        p_role: 'brand'
-      });
-
-      if (userError) {
-        console.warn("Auto-save user setup failed:", userError);
-        return;
-      }
-
-      // Auto-save brand profile
-      const updateData: any = {
-        user_id: user.id,
-        company_name: formData.brandName,
-        website_url: formData.website || null,
-        amazon_storefront_url: formData.amazonStorefront || null,
-        about: formData.about,
-        contact_name: formData.contactName,
-        contact_email: user.email // Use user's email as contact email
-      };
-
-      const { data: brand, error: brandError } = await supabase
-        .from("brands")
-        .upsert(updateData, { onConflict: 'user_id' })
-        .select()
-        .single();
-
-      if (brandError) {
-        console.warn("Auto-save brand failed:", brandError);
-        return;
-      }
-
-      console.log("Auto-saved brand profile data");
-    } catch (error) {
-      console.warn("Auto-save failed:", error);
-    }
-  }, [user, autoSaveEnabled]);
-
-  // Auto-save effect
-  useEffect(() => {
-    const subscription = form.watch((data) => {
-      if (!user || !autoSaveEnabled) return;
-      
-      // Only auto-save if we have minimum required fields
-      if (data.brandName && data.about && data.about.length >= 10 && data.contactName) {
-        const timeoutId = setTimeout(() => {
-          autoSaveToDatabase(data as BrandOnboardingFormData);
-        }, 3000); // Save 3 seconds after user stops typing
-
-        return () => clearTimeout(timeoutId);
-      }
-    });
-
-    return () => subscription.unsubscribe();
-  }, [form, autoSaveToDatabase, user, autoSaveEnabled]);
   const uploadLogo = async (file: File, userId: string) => {
     const fileExt = file.name.split('.').pop();
     const fileName = `${userId}/logo.${fileExt}`;
@@ -286,11 +177,9 @@ const BrandOnboarding = () => {
       return;
     }
 
-    console.log("Starting brand profile save for user:", user.id);
+    console.log("Starting brand onboarding for user:", user.id);
     console.log("Form data:", data);
 
-    // Temporarily disable auto-save during submission
-    setAutoSaveEnabled(false);
     setLoading(true);
     try {
       // First ensure user exists in public.users table
@@ -301,7 +190,9 @@ const BrandOnboarding = () => {
         p_role: 'brand'
       });
 
-      if (userError) throw userError;
+      if (userError) {
+        throw userError;
+      }
 
       let logoUrl = null;
       
@@ -333,7 +224,7 @@ const BrandOnboarding = () => {
         allNiches = allNiches.filter(n => n !== "Other").concat(data.customNiche.trim());
       }
 
-      // Create or update brand profile
+      // Create brand profile
       const brandData: any = {
         user_id: user.id,
         company_name: data.brandName,
@@ -350,7 +241,7 @@ const BrandOnboarding = () => {
 
       const { data: brand, error: brandError } = await supabase
         .from("brands")
-        .upsert(brandData, { onConflict: 'user_id' })
+        .insert(brandData)
         .select()
         .single();
 
@@ -359,13 +250,11 @@ const BrandOnboarding = () => {
       // Save selected niches (we'll create a brand_niches table similar to creator_niches)
       // For now, let's store in the about field or create the table if needed
       
-      console.log("Brand profile saved successfully");
+      console.log("Brand profile created successfully");
 
       toast({
-        title: isExistingBrand ? "Profile Updated!" : "Welcome to PartnerConnections!",
-        description: isExistingBrand 
-          ? "Your brand profile has been updated successfully."
-          : "Your brand profile has been created successfully.",
+        title: "Welcome to PartnerConnections!",
+        description: "Your brand profile has been created successfully.",
       });
 
       navigate("/brand-dashboard");
@@ -378,7 +267,6 @@ const BrandOnboarding = () => {
       });
     } finally {
       setLoading(false);
-      setAutoSaveEnabled(true); // Re-enable auto-save
     }
   };
 
@@ -396,14 +284,9 @@ const BrandOnboarding = () => {
             <Building2 className="h-8 w-8 text-primary" />
             PartnerConnections
           </div>
-          <h1 className="text-3xl font-bold mb-2">
-            {isExistingBrand ? "Edit Brand Profile" : "Create Your Brand Profile"}
-          </h1>
+          <h1 className="text-3xl font-bold mb-2">Create Your Brand Profile</h1>
           <p className="text-muted-foreground">
-            {isExistingBrand 
-              ? "Update your brand information to help creators find and connect with you."
-              : "Tell creators about your brand and make it easy for them to reach out for partnerships."
-            }
+            Tell creators about your brand and make it easy for them to reach out for partnerships.
           </p>
         </div>
 
@@ -585,23 +468,10 @@ const BrandOnboarding = () => {
                   disabled={loading}
                   className="sm:flex-1"
                 >
-                  {loading 
-                    ? (isExistingBrand ? "Updating..." : "Creating...") 
-                    : (isExistingBrand ? "Update Profile" : "Create Profile")
-                  }
+                  {loading ? "Creating Profile..." : "Create Brand Profile"}
                 </Button>
               </div>
             </form>
-
-            {/* Role Switcher */}
-            <div className="mt-6 pt-6 border-t">
-              <div className="text-center">
-                <h3 className="font-medium text-sm mb-3 text-muted-foreground">
-                  Want to use PartnerConnections as a creator instead?
-                </h3>
-                <RoleSwitcher currentRole="brand" className="w-full sm:w-auto" />
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
