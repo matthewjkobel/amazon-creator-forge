@@ -6,7 +6,6 @@ import { BrowserRouter, Routes, Route, useLocation, useNavigate } from "react-ro
 import { AuthProvider, useAuth } from "./hooks/useAuth";
 import { useEffect } from "react";
 import { getRedirectPath } from "./utils/authRedirect";
-import { supabase } from "@/integrations/supabase/client";
 import Home from "./pages/Home";
 import Directory from "./pages/Directory";
 import HowItWorks from "./pages/HowItWorks";
@@ -16,7 +15,6 @@ import RoleSelection from "./pages/RoleSelection";
 import CreatorProfile from "./pages/CreatorProfile";
 import CreatorDashboard from "./pages/CreatorDashboard";
 import BrandProfile from "./pages/BrandProfile";
-import BrandOnboarding from "./pages/BrandOnboarding";
 import BrandDashboard from "./pages/BrandDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
 import EmailTest from "./pages/EmailTest";
@@ -36,30 +34,15 @@ const AuthRouter = () => {
       if (loading || !user) return;
       
       // Don't redirect if user is on auth-related or profile editing routes
-      const excludedRoutes = ['/auth', '/creator-profile', '/brand-profile', '/brand-onboarding'];
+      const excludedRoutes = ['/auth', '/role-selection', '/creator-profile', '/brand-profile'];
       if (excludedRoutes.includes(location.pathname)) return;
       
-      try {
-        // Ensure user row exists in public.users table first
-        await supabase.rpc('ensure_user_row', {
-          p_id: user.id,
-          p_email: user.email,
-          p_full_name: user.user_metadata?.full_name || user.email?.split('@')[0]
-        });
-        
-        // Get appropriate redirect path based on user's profile
-        const redirectPath = await getRedirectPath(user.id);
-        
-        // Only redirect if we're not already on the correct path
-        if (location.pathname !== redirectPath) {
-          navigate(redirectPath);
-        }
-      } catch (error) {
-        console.error("Error in auth redirect:", error);
-        // If there's an error, still try to redirect to role selection
-        if (location.pathname !== '/role-selection') {
-          navigate('/role-selection');
-        }
+      // Get appropriate redirect path based on user's profile
+      const redirectPath = await getRedirectPath(user.id);
+      
+      // Only redirect if we're not already on the correct path
+      if (location.pathname !== redirectPath) {
+        navigate(redirectPath);
       }
     };
 
@@ -77,7 +60,6 @@ const AuthRouter = () => {
       <Route path="/creator-profile" element={<CreatorProfile />} />
       <Route path="/creator-dashboard" element={<CreatorDashboard />} />
       <Route path="/brand-profile" element={<BrandProfile />} />
-      <Route path="/brand-onboarding" element={<BrandOnboarding />} />
       <Route path="/brand-dashboard" element={<BrandDashboard />} />
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
       <Route path="/email-test" element={<EmailTest />} />

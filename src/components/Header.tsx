@@ -1,27 +1,12 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarImage, AvatarFallback } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { Users, Search, Heart, Menu, LogOut, User } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
-import { getRedirectPath } from "@/utils/authRedirect";
 
 const Header = () => {
   const { user, signOut } = useAuth();
-  const navigate = useNavigate();
-
-  const handleProfileClick = async () => {
-    if (!user) return;
-    
-    try {
-      const redirectPath = await getRedirectPath(user.id);
-      navigate(redirectPath);
-    } catch (error) {
-      console.error("Error getting profile path:", error);
-      // Fallback to role selection if there's an error
-      navigate("/role-selection");
-    }
-  };
 
   return (
     <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50">
@@ -78,7 +63,7 @@ const Header = () => {
                     </Button>
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
-                    <DropdownMenuItem onClick={handleProfileClick}>
+                    <DropdownMenuItem>
                       <User className="mr-2 h-4 w-4" />
                       Profile
                     </DropdownMenuItem>

@@ -51,20 +51,9 @@ const Auth = () => {
           title: "Welcome back!",
           description: "You've been signed in successfully.",
         });
-        // Get current session and ensure user row exists
+        // Get current session and redirect to appropriate dashboard
         const { data: { session } } = await supabase.auth.getSession();
         if (session?.user) {
-          // Ensure user row exists in public.users table
-          try {
-            await supabase.rpc('ensure_user_row', {
-              p_id: session.user.id,
-              p_email: session.user.email,
-              p_full_name: session.user.user_metadata?.full_name || session.user.email?.split('@')[0]
-            });
-          } catch (ensureUserError) {
-            console.error("Failed to ensure user row:", ensureUserError);
-          }
-          
           const redirectPath = await getRedirectPath(session.user.id);
           navigate(redirectPath);
         } else {
@@ -84,7 +73,7 @@ const Auth = () => {
     setError("");
 
     try {
-      const redirectUrl = `${window.location.origin}/role-selection`;
+      const redirectUrl = `${window.location.origin}/`;
       
       const { error } = await supabase.auth.signUp({
         email,
