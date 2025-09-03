@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Building2, Palette, AlertCircle, CheckCircle, TestTube } from "lucide-react";
+import { Users, Building2, Palette, AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -21,53 +21,21 @@ const RoleSelection = () => {
   const [existingProfile, setExistingProfile] = useState<ExistingProfile | null>(null);
   const [showExistingProfilePrompt, setShowExistingProfilePrompt] = useState(false);
   const [checkingProfiles, setCheckingProfiles] = useState(true);
-  const [testMode, setTestMode] = useState(false);
-  const [simulatedUser, setSimulatedUser] = useState<any>(null);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
 
-  // Test mode users
-  const testUsers = {
-    creator: {
-      id: '11111111-1111-1111-1111-111111111111',
-      email: 'test.creator@example.com',
-      user_metadata: { full_name: 'Test Creator' }
-    },
-    brand: {
-      id: '22222222-2222-2222-2222-222222222222', 
-      email: 'test.brand@example.com',
-      user_metadata: { full_name: 'Test Brand User' }
+  // Redirect unauthenticated users to auth page
+  useEffect(() => {
+    if (!authLoading && !user) {
+      navigate("/auth");
     }
-  };
-
-  // Test mode functions
-  const enterTestMode = (userType: 'creator' | 'brand') => {
-    setTestMode(true);
-    setSimulatedUser(testUsers[userType]);
-    toast({
-      title: "Test Mode Activated",
-      description: `Simulating login as ${userType}`,
-    });
-  };
-
-  const exitTestMode = () => {
-    setTestMode(false);
-    setSimulatedUser(null);
-    setExistingProfile(null);
-    setShowExistingProfilePrompt(false);
-    setCheckingProfiles(true);
-    toast({
-      title: "Test Mode Disabled",
-      description: "Returning to normal authentication",
-    });
-  };
+  }, [authLoading, user, navigate]);
 
   // Check for existing profiles when component mounts
   useEffect(() => {
     const checkExistingProfiles = async () => {
-      const currentUser = testMode ? simulatedUser : user;
-      if (!currentUser) {
+      if (!user || authLoading) {
         setCheckingProfiles(false);
         return;
       }
@@ -75,14 +43,18 @@ const RoleSelection = () => {
       setCheckingProfiles(true);
       
       try {
+        console.log("🔍 Checking existing profiles for user:", user.id);
+        
         // Check for existing creator profile
-        const { data: creatorData } = await supabase
+        const { data: creatorData, error: creatorError } = await supabase
           .from("creators")
           .select("id, display_name")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
-        if (creatorData) {
+        console.log("🎨 Creator check result:", { creatorData, creatorError });
+
+        if (creatorData && !creatorError) {
           setExistingProfile({
             type: "creator",
             id: creatorData.id,
@@ -93,13 +65,15 @@ const RoleSelection = () => {
         }
 
         // Check for existing brand profile
-        const { data: brandData } = await supabase
+        const { data: brandData, error: brandError } = await supabase
           .from("brands")
           .select("id, company_name")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
-        if (brandData) {
+        console.log("🏢 Brand check result:", { brandData, brandError });
+
+        if (brandData && !brandError) {
           setExistingProfile({
             type: "brand",
             id: brandData.id,
@@ -108,14 +82,14 @@ const RoleSelection = () => {
           setShowExistingProfilePrompt(true);
         }
       } catch (error) {
-        console.error("Error checking existing profiles:", error);
+        console.error("❌ Error checking existing profiles:", error);
       } finally {
         setCheckingProfiles(false);
       }
     };
 
     checkExistingProfiles();
-  }, [user, testMode, simulatedUser]);
+  }, [user, authLoading]);
 
   const handleRoleSelect = (role: "creator" | "brand") => {
     setSelectedRole(role);
@@ -143,22 +117,29 @@ const RoleSelection = () => {
   };
 
   const handleContinue = async () => {
-    const currentUser = testMode ? simulatedUser : user;
-    if (!selectedRole || !currentUser) return;
+    if (!selectedRole || !user) {
+      console.error("❌ Missing data for profile creation:", { selectedRole, userId: user?.id });
+      setError("Missing required information. Please try again.");
+      return;
+    }
 
     setLoading(true);
     setError("");
 
     try {
-      // Check if user already has the selected profile type
+      console.log("🚀 Starting profile creation for:", { userId: user.id, role: selectedRole });
+
+      // Double-check if user already has the selected profile type
       if (selectedRole === "creator") {
-        const { data: existingCreator } = await supabase
+        const { data: existingCreator, error: checkError } = await supabase
           .from("creators")
           .select("id")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
-        if (existingCreator) {
+        console.log("🎨 Creator existence check:", { existingCreator, checkError });
+
+        if (existingCreator && !checkError) {
           toast({
             title: "Profile exists",
             description: "Redirecting to your creator dashboard.",
@@ -167,13 +148,15 @@ const RoleSelection = () => {
           return;
         }
       } else {
-        const { data: existingBrand } = await supabase
+        const { data: existingBrand, error: checkError } = await supabase
           .from("brands")
           .select("id")
-          .eq("user_id", currentUser.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
-        if (existingBrand) {
+        console.log("🏢 Brand existence check:", { existingBrand, checkError });
+
+        if (existingBrand && !checkError) {
           toast({
             title: "Profile exists", 
             description: "Redirecting to your brand dashboard.",
@@ -183,43 +166,44 @@ const RoleSelection = () => {
         }
       }
 
-      // First ensure user exists in public.users table
+      // Ensure user exists in public.users table (without specifying role)
+      console.log("👤 Ensuring user row exists...");
       const { error: userError } = await supabase.rpc('ensure_user_row', {
-        p_id: currentUser.id,
-        p_email: currentUser.email || '',
-        p_full_name: currentUser.user_metadata?.full_name || '',
-        p_role: selectedRole === "creator" ? 'creator' : 'brand'
+        p_id: user.id,
+        p_email: user.email || '',
+        p_full_name: user.user_metadata?.full_name || ''
       });
 
       if (userError) {
-        console.error("User row creation error:", userError);
-        setError("Failed to set up user profile. Please try again.");
+        console.error("❌ User row creation error:", userError);
+        setError("Failed to set up user account. Please try again.");
         return;
       }
 
       if (selectedRole === "creator") {
-        // Create creator profile
+        console.log("🎨 Creating creator profile...");
         const { error } = await supabase
           .from("creators")
           .insert({
-            user_id: currentUser.id,
-            display_name: currentUser.user_metadata?.full_name || "New Creator",
+            user_id: user.id,
+            display_name: user.user_metadata?.full_name || "New Creator",
             visibility: "public"
           });
 
         if (error) {
-          console.error("Creator profile creation error:", error);
-          setError("Failed to create creator profile. Please try again.");
+          console.error("❌ Creator profile creation error:", error);
+          setError(`Failed to create creator profile: ${error.message}`);
           return;
         }
 
+        console.log("✅ Creator profile created successfully");
         toast({
           title: "Welcome to PartnerConnections!",
           description: "Your creator profile has been created successfully.",
         });
         navigate("/creator-profile");
       } else {
-        // For brands, just navigate to onboarding - don't create profile yet
+        console.log("🏢 Redirecting to brand onboarding...");
         toast({
           title: "Welcome to PartnerConnections!",
           description: "Let's set up your brand profile.",
@@ -227,61 +211,23 @@ const RoleSelection = () => {
         navigate("/brand-onboarding");
       }
     } catch (err) {
-      console.error("Unexpected error in role selection:", err);
+      console.error("❌ Unexpected error in role selection:", err);
       setError("An unexpected error occurred. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Show test mode controls if no user is authenticated
-  if (!testMode && !user) {
+  // Redirect if not authenticated (handled by useEffect above)
+  if (authLoading || !user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <div className="w-full max-w-md">
-          <div className="text-center mb-8">
-            <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
-              <Users className="h-8 w-8 text-primary" />
-              PartnerConnections
-            </div>
-            <h1 className="text-2xl font-bold mb-2">Test Mode</h1>
-            <p className="text-muted-foreground">
-              Test the profile detection flow with simulated users
-            </p>
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+            <Users className="h-8 w-8 text-primary" />
+            PartnerConnections
           </div>
-
-          <div className="space-y-4">
-            <Card className="p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <TestTube className="h-5 w-5 text-primary" />
-                <span className="font-medium">Test Profile Detection</span>
-              </div>
-              <div className="space-y-2">
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => enterTestMode('creator')}
-                >
-                  <Palette className="h-4 w-4 mr-2" />
-                  Test as Creator (has existing profile)
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => enterTestMode('brand')}
-                >
-                  <Building2 className="h-4 w-4 mr-2" />
-                  Test as Brand (has existing profile)
-                </Button>
-              </div>
-            </Card>
-
-            <div className="text-center">
-              <Button variant="ghost" asChild>
-                <a href="/auth">Sign in normally</a>
-              </Button>
-            </div>
-          </div>
+          <p className="text-muted-foreground">Checking authentication...</p>
         </div>
       </div>
     );
@@ -291,18 +237,13 @@ const RoleSelection = () => {
   if (checkingProfiles) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
-              <Users className="h-8 w-8 text-primary" />
-              PartnerConnections
-            </div>
-            <p className="text-muted-foreground">Checking your account...</p>
-            {testMode && (
-              <div className="mt-2 text-sm text-blue-600">
-                Test Mode: {simulatedUser?.email}
-              </div>
-            )}
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+            <Users className="h-8 w-8 text-primary" />
+            PartnerConnections
           </div>
+          <p className="text-muted-foreground">Checking your account...</p>
+        </div>
       </div>
     );
   }
@@ -359,17 +300,6 @@ const RoleSelection = () => {
             >
               Create a Different Profile Type
             </Button>
-
-            {testMode && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="w-full"
-                onClick={exitTestMode}
-              >
-                Exit Test Mode
-              </Button>
-            )}
           </div>
 
           <p className="text-xs text-muted-foreground text-center mt-4">
@@ -393,14 +323,6 @@ const RoleSelection = () => {
           <p className="text-muted-foreground">
             Select how you'd like to use PartnerConnections. You can change this later if needed.
           </p>
-          {testMode && (
-            <div className="mt-2 text-sm text-blue-600 bg-blue-50 rounded p-2">
-              Test Mode: {simulatedUser?.email}
-              <Button variant="ghost" size="sm" onClick={exitTestMode} className="ml-2">
-                Exit Test Mode
-              </Button>
-            </div>
-          )}
         </div>
 
         {error && (
@@ -485,7 +407,7 @@ const RoleSelection = () => {
             size="lg" 
             className="w-full md:w-auto px-8"
             onClick={handleContinue}
-            disabled={!selectedRole || loading}
+            disabled={!selectedRole || loading || !user}
           >
             {loading ? "Setting up your profile..." : "Continue"}
           </Button>
