@@ -1,24 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Users, Building2, Palette, AlertCircle } from "lucide-react";
+import { Users, Building2, Palette, AlertCircle, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+
+interface ExistingProfile {
+  type: "creator" | "brand";
+  id: string;
+  name: string;
+}
 
 const RoleSelection = () => {
   const [selectedRole, setSelectedRole] = useState<"creator" | "brand" | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [existingProfile, setExistingProfile] = useState<ExistingProfile | null>(null);
+  const [showExistingProfilePrompt, setShowExistingProfilePrompt] = useState(false);
+  const [checkingProfiles, setCheckingProfiles] = useState(true);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { toast } = useToast();
 
+  // Check for existing profiles when component mounts
+  useEffect(() => {
+    const checkExistingProfiles = async () => {
+      if (!user) return;
+      
+      setCheckingProfiles(true);
+      
+      try {
+        // Check for existing creator profile
+        const { data: creatorData } = await supabase
+          .from("creators")
+          .select("id, display_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (creatorData) {
+          setExistingProfile({
+            type: "creator",
+            id: creatorData.id,
+            name: creatorData.display_name || "Creator Profile"
+          });
+          setShowExistingProfilePrompt(true);
+          return;
+        }
+
+        // Check for existing brand profile
+        const { data: brandData } = await supabase
+          .from("brands")
+          .select("id, company_name")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (brandData) {
+          setExistingProfile({
+            type: "brand",
+            id: brandData.id,
+            name: brandData.company_name || "Brand Profile"
+          });
+          setShowExistingProfilePrompt(true);
+        }
+      } catch (error) {
+        console.error("Error checking existing profiles:", error);
+      } finally {
+        setCheckingProfiles(false);
+      }
+    };
+
+    checkExistingProfiles();
+  }, [user]);
+
   const handleRoleSelect = (role: "creator" | "brand") => {
     setSelectedRole(role);
     setError("");
+  };
+
+  const handleAccessExistingProfile = () => {
+    if (!existingProfile) return;
+    
+    toast({
+      title: "Accessing your profile",
+      description: `Redirecting to your ${existingProfile.type} dashboard.`,
+    });
+
+    if (existingProfile.type === "creator") {
+      navigate("/creator-dashboard");
+    } else {
+      navigate("/brand-dashboard");
+    }
+  };
+
+  const handleCreateNewProfile = () => {
+    setShowExistingProfilePrompt(false);
+    setExistingProfile(null);
   };
 
   const handleContinue = async () => {
@@ -78,6 +157,83 @@ const RoleSelection = () => {
       setLoading(false);
     }
   };
+
+  // Show loading state while checking profiles
+  if (checkingProfiles) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center">
+          <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+            <Users className="h-8 w-8 text-primary" />
+            PartnerConnections
+          </div>
+          <p className="text-muted-foreground">Checking your account...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show existing profile prompt
+  if (showExistingProfilePrompt && existingProfile) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="w-full max-w-lg">
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center gap-2 font-bold text-2xl mb-4">
+              <Users className="h-8 w-8 text-primary" />
+              PartnerConnections
+            </div>
+            <CheckCircle className="h-16 w-16 text-green-500 mx-auto mb-4" />
+            <h1 className="text-2xl font-bold mb-2">Profile Found</h1>
+            <p className="text-muted-foreground">
+              We found an existing {existingProfile.type} profile for your account.
+            </p>
+          </div>
+
+          <Card className="mb-6">
+            <CardContent className="pt-6">
+              <div className="text-center space-y-4">
+                <div className="p-3 rounded-full bg-primary/10 w-fit mx-auto">
+                  {existingProfile.type === "creator" ? (
+                    <Palette className="h-8 w-8 text-primary" />
+                  ) : (
+                    <Building2 className="h-8 w-8 text-primary" />
+                  )}
+                </div>
+                <div>
+                  <h3 className="font-semibold text-lg">{existingProfile.name}</h3>
+                  <p className="text-muted-foreground capitalize">{existingProfile.type} Profile</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <div className="space-y-3">
+            <Button 
+              size="lg" 
+              className="w-full"
+              onClick={handleAccessExistingProfile}
+            >
+              Access My {existingProfile.type === "creator" ? "Creator" : "Brand"} Profile
+            </Button>
+            
+            <Button 
+              variant="outline" 
+              size="lg" 
+              className="w-full"
+              onClick={handleCreateNewProfile}
+            >
+              Create a Different Profile Type
+            </Button>
+          </div>
+
+          <p className="text-xs text-muted-foreground text-center mt-4">
+            You can always switch between profile types later in your account settings.
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
