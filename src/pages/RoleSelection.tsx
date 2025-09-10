@@ -168,6 +168,12 @@ const RoleSelection = () => {
 
       // Ensure user exists in public.users table (without specifying role)
       console.log("👤 Ensuring user row exists...");
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("🔐 Session before RPC ensure_user_row:", {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user?.id,
+        accessToken: sessionData.session?.access_token ? 'present' : 'missing'
+      });
       const { error: userError } = await supabase.rpc('ensure_user_row', {
         p_id: user.id,
         p_email: user.email || '',
@@ -175,7 +181,14 @@ const RoleSelection = () => {
       });
 
       if (userError) {
-        console.error("❌ User row creation error:", userError);
+        console.error("❌ User row creation error (ensure_user_row):", {
+          message: userError.message,
+          name: userError.name,
+          status: (userError as any).status,
+          code: (userError as any).code,
+          details: (userError as any).details,
+          hint: (userError as any).hint,
+        });
         setError("Failed to set up user account. Please try again.");
         return;
       }
@@ -191,7 +204,14 @@ const RoleSelection = () => {
           });
 
         if (error) {
-          console.error("❌ Creator profile creation error:", error);
+          console.error("❌ Creator profile creation error:", {
+            message: error.message,
+            name: (error as any).name,
+            status: (error as any).status,
+            code: (error as any).code,
+            details: (error as any).details,
+            hint: (error as any).hint,
+          });
           setError(`Failed to create creator profile: ${error.message}`);
           return;
         }

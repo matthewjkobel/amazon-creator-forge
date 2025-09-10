@@ -171,6 +171,12 @@ const BrandProfile = () => {
 
     try {
       // First ensure user exists in public.users table
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("🔐 Session before RPC ensure_user_row (BrandProfile):", {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user?.id,
+        accessToken: sessionData.session?.access_token ? 'present' : 'missing'
+      });
       const { error: userError } = await supabase.rpc('ensure_user_row', {
         p_id: user.id,
         p_email: user.email || '',
@@ -179,6 +185,14 @@ const BrandProfile = () => {
       });
 
       if (userError) {
+        console.error("❌ ensure_user_row error (BrandProfile):", {
+          message: userError.message,
+          name: userError.name,
+          status: (userError as any).status,
+          code: (userError as any).code,
+          details: (userError as any).details,
+          hint: (userError as any).hint,
+        });
         setError("Failed to set up user profile. Please try again.");
         return;
       }

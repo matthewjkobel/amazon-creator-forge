@@ -106,6 +106,14 @@ const BrandOnboarding = () => {
         }
       }
 
+      // Log session state prior to brand insert
+      const { data: sessionData } = await supabase.auth.getSession();
+      console.log("🔐 Session before brand insert (BrandOnboarding):", {
+        hasSession: !!sessionData.session,
+        userId: sessionData.session?.user?.id,
+        accessToken: sessionData.session?.access_token ? 'present' : 'missing'
+      });
+
       // Create brand profile
       const { error } = await supabase
         .from("brands")
@@ -122,7 +130,14 @@ const BrandOnboarding = () => {
         });
 
       if (error) {
-        console.error("Brand creation error:", error);
+        console.error("❌ Brand creation error:", {
+          message: error.message,
+          name: (error as any).name,
+          status: (error as any).status,
+          code: (error as any).code,
+          details: (error as any).details,
+          hint: (error as any).hint,
+        });
         setError("Failed to create brand profile. Please try again.");
         return;
       }
