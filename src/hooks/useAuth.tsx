@@ -29,6 +29,36 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
+  // Handle Supabase email verification / OAuth redirect by exchanging the auth code for a session
+  useEffect(() => {
+    try {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+      const errorDescription = url.searchParams.get('error_description');
+
+      if (errorDescription) {
+        console.warn('Auth redirect error:', errorDescription);
+      }
+
+      if (code) {
+        // Exchange the code for a session and clean the URL
+        setLoading(true);
+        supabase.auth.exchangeCodeForSession(code)
+          .then(({ error }) => {
+            if (error) {
+              console.error('exchangeCodeForSession error:', error);
+            }
+            // Remove query params to keep clean URLs
+            const clean = url.origin + url.pathname;
+            window.history.replaceState({}, document.title, clean);
+          })
+          .finally(() => setLoading(false));
+      }
+    } catch (e) {
+      console.error('Error handling auth redirect:', e);
+    }
+  }, []);
+
   useEffect(() => {
     // Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(

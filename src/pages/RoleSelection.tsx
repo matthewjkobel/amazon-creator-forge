@@ -427,7 +427,7 @@ const RoleSelection = () => {
             size="lg" 
             className="w-full md:w-auto px-8"
             onClick={handleContinue}
-            disabled={!selectedRole || loading || !user}
+            disabled={!selectedRole || loading || !user || authLoading}
           >
             {loading ? "Setting up your profile..." : "Continue"}
           </Button>
