@@ -169,26 +169,42 @@ const RoleSelection = () => {
       // Ensure user exists in public.users table (without specifying role)
       console.log("👤 Ensuring user row exists...");
       const { data: sessionData } = await supabase.auth.getSession();
+      
+      if (!sessionData.session) {
+        console.error("❌ No valid session found");
+        setError("Authentication session expired. Please sign in again.");
+        navigate("/auth");
+        return;
+      }
+
       console.log("🔐 Session before RPC ensure_user_row:", {
         hasSession: !!sessionData.session,
         userId: sessionData.session?.user?.id,
         accessToken: sessionData.session?.access_token ? 'present' : 'missing'
       });
-      const { error: userError } = await supabase.rpc('ensure_user_row', {
-        p_id: user.id,
-        p_email: user.email || '',
-        p_full_name: user.user_metadata?.full_name || ''
-      });
 
-      if (userError) {
-        console.error("❌ User row creation error (ensure_user_row):", {
-          message: userError.message,
-          name: userError.name,
-          status: (userError as any).status,
-          code: (userError as any).code,
-          details: (userError as any).details,
-          hint: (userError as any).hint,
-        });
+      // Directly insert into users table with proper error handling
+      try {
+        const { error: insertError } = await supabase
+          .from('users')
+          .upsert({
+            id: user.id,
+            email: user.email || '',
+            full_name: user.user_metadata?.full_name || '',
+            role: 'brand' // Default role
+          })
+          .select()
+          .single();
+
+        if (insertError) {
+          console.error("❌ Direct user insert error:", insertError);
+          setError("Failed to set up user account. Please try again.");
+          return;
+        }
+        
+        console.log("✅ User record created/updated successfully");
+      } catch (directInsertError) {
+        console.error("❌ Exception during user insert:", directInsertError);
         setError("Failed to set up user account. Please try again.");
         return;
       }
