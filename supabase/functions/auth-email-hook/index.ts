@@ -120,39 +120,57 @@ serve(async (req) => {
       <p style="color:#6b7280;font-size:12px">If you didn’t request this, you can safely ignore this email.</p>
     `;
 
-    let sendError: any = null;
-    if (resendKey) {
-      const resend = new Resend(resendKey);
-      console.log("auth-email-hook: attempting to send email via Resend", { 
-        hasUserEmail: Boolean(userEmail),
-        userEmail: userEmail,
-        hasHTML: Boolean(html)
-      });
-      try {
-        const result = await resend.emails.send({
-          from: "Partner Connections <no-reply@mail.partnerconnections.com>",
-          to: [userEmail],
-          subject: "Your secure sign-in link",
-          html,
+    // Schedule email sending in the background to avoid hook timeouts
+    const sendTask = async () => {
+      let sendError: any = null;
+      if (resendKey) {
+        const resend = new Resend(resendKey);
+        console.log("auth-email-hook: attempting to send email via Resend", { 
+          hasUserEmail: Boolean(userEmail),
+          userEmail: userEmail,
+          hasHTML: Boolean(html)
         });
-        console.log("auth-email-hook: Resend API response", result);
-        if (result.error) {
-          sendError = result.error;
-          console.error("auth-email-hook: Resend API returned error", result.error);
-        } else {
-          console.log("auth-email-hook: email sent successfully to", userEmail, "with ID:", result.data?.id);
+        try {
+          const result = await resend.emails.send({
+            from: "Partner Connections <no-reply@mail.partnerconnections.com>",
+            to: [userEmail],
+            subject: "Your secure sign-in link",
+            html,
+          });
+          console.log("auth-email-hook: Resend API response", result);
+          if (result.error) {
+            sendError = result.error;
+            console.error("auth-email-hook: Resend API returned error", result.error);
+          } else {
+            console.log("auth-email-hook: email sent successfully to", userEmail, "with ID:", result.data?.id);
+          }
+        } catch (e: any) {
+          sendError = e?.message || e;
+          console.error("auth-email-hook: Resend send failed", sendError);
         }
-      } catch (e: any) {
-        sendError = e?.message || e;
-        console.error("auth-email-hook: Resend send failed", sendError);
+      } else {
+        console.log("auth-email-hook: skipping email send - RESEND_API_KEY not configured");
       }
-    } else {
-      console.log("auth-email-hook: skipping email send - RESEND_API_KEY not configured");
+      console.log("auth-email-hook: completed", { delivered: !sendError });
+    };
+
+    try {
+      // Prefer the platform's background task API if available
+      // @ts-ignore - EdgeRuntime is provided by the runtime
+      if (typeof (globalThis as any).EdgeRuntime?.waitUntil === 'function') {
+        // @ts-ignore
+        (globalThis as any).EdgeRuntime.waitUntil(sendTask());
+      } else {
+        // Fallback: fire-and-forget without awaiting
+        sendTask();
+      }
+    } catch (e) {
+      console.warn("auth-email-hook: waitUntil scheduling failed, falling back to fire-and-forget", e);
+      sendTask();
     }
 
-    console.log("auth-email-hook: completed", { delivered: !sendError });
-
-    return new Response(JSON.stringify({ ok: true, delivered: !sendError }), {
+    // Immediately acknowledge the hook to avoid 5s timeout
+    return new Response(JSON.stringify({ ok: true, scheduled: true }), {
       status: 200,
       headers: { "Content-Type": "application/json", ...corsHeaders },
     });
